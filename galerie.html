@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Galerie FB Barber</title>
+<meta name="description" content="Le salon FB Barber en photos : les postes, l’espace shampoing et quelques coupes au fauteuil.">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400&family=Barlow:wght@400&family=Roboto+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+<div class="page" lang="fr">
+
+  <aside class="newsbar" aria-label="Actualités">
+    <p class="newsbar__msg is-on">Galerie • Le salon en images</p>
+    <p class="newsbar__msg">Salon • <span data-open-text>Horaires à renseigner</span></p>
+    <p class="newsbar__msg">News • <span data-date>Aujourd’hui</span> • Prenez votre rendez-vous</p>
+  </aside>
+
+  <div class="progress" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="pill site-header__start" href="index.html#reservation" data-booking data-magnetic data-roll>Réserver</a>
+    <a class="brand" href="index.html" aria-label="FB Barber, accueil">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 1.5L22.5 12L12 22.5L1.5 12Z"/>
+        <path d="M12 1.5V22.5M1.5 12H22.5"/>
+      </svg>
+      <span>FB Barber</span>
+    </a>
+    <button class="pill site-header__end menu-toggle" type="button" aria-expanded="false" aria-controls="menu" data-magnetic data-roll>Menu</button>
+  </header>
+
+  <div class="menu" id="menu" aria-hidden="true">
+    <nav class="menu__nav" aria-label="Navigation principale">
+      <ul class="menu__list">
+        <li style="--i: 0"><span class="menu__idx">01</span><a class="menu__link" href="index.html#services" data-roll>Services</a></li>
+        <li style="--i: 1"><span class="menu__idx">02</span><a class="menu__link" href="index.html#atelier" data-roll>L’atelier</a></li>
+        <li style="--i: 2"><span class="menu__idx">03</span><a class="menu__link" href="index.html#processus" data-roll>Processus</a></li>
+        <li style="--i: 3"><span class="menu__idx">04</span><a class="menu__link" href="galerie.html" aria-current="page" data-roll>Galerie</a></li>
+        <li style="--i: 4"><span class="menu__idx">05</span><a class="menu__link" href="index.html#reservation" data-roll>Réservation</a></li>
+      </ul>
+    </nav>
+    <div class="menu__foot">
+      <a class="pill" href="index.html#reservation" data-booking data-roll>Réserver un créneau</a>
+      <p class="mono">FB Barber, coupe, barbe, soin</p>
+    </div>
+  </div>
+
+  <main id="top">
+
+    <!-- HERO : la photo du salon, très floutée, derrière le titre -->
+    <section class="hero hero--gallery" aria-labelledby="hero-title">
+      <img class="hero__photo" src="assets/img/galerie/salon-postes.jpg" alt="" width="1170" height="623">
+      <canvas class="hero__stars" data-stars aria-hidden="true"></canvas>
+
+      <p class="hero__label hero__label--l">L’atelier en images</p>
+      <p class="hero__label hero__label--r">05 photos</p>
+
+      <div class="hero__center">
+        <span class="pill pill--badge">FB Barber · Galerie</span>
+        <h1 class="hero__title" id="hero-title" data-split>Galerie</h1>
+        <p class="lede hero__lede">Le salon, les gestes et les clients, petits et grands.</p>
+        <div class="hero__ctas">
+          <a class="pill" href="#photos" data-magnetic data-roll>Voir les photos</a>
+          <a class="pill" href="index.html#reservation" data-booking data-magnetic data-roll>Prendre rendez-vous</a>
+        </div>
+      </div>
+
+      <a class="hero__scroll" href="#photos">
+        <span class="mono">Défiler</span>
+        <span class="hero__scroll-line" aria-hidden="true"></span>
+      </a>
+    </section>
+
+    <!-- PHOTOS : un clic ouvre la visionneuse (sans JavaScript, le lien ouvre l'image) -->
+    <section class="section gallery" id="photos" aria-label="Photos du salon">
+      <div class="wrap gallery__grid">
+
+        <a class="shot shot--wide" href="assets/img/galerie/salon-postes.jpg" data-shot data-cursor="Agrandir">
+          <span class="shot__frame">
+            <img src="assets/img/galerie/salon-postes.jpg" alt="Intérieur du salon : trois fauteuils de barbier noirs face à des miroirs ovales éclairés, appliques murales et papier peint gris." width="1170" height="623" decoding="async">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+          </span>
+          <span class="shot__cap">
+            <span class="pill pill--badge">01</span>
+            <span class="shot__title">Le salon</span>
+            <span class="shot__text">Trois postes, des miroirs ovales éclairés et des fauteuils de barbier.</span>
+          </span>
+        </a>
+
+        <a class="shot shot--side" href="assets/img/galerie/espace-shampoing.jpg" data-shot data-cursor="Agrandir">
+          <span class="shot__frame">
+            <img src="assets/img/galerie/espace-shampoing.jpg" alt="L’espace shampoing : un fauteuil-bac noir, un chariot d’outils et un miroir ovale éclairé." width="1170" height="1444" decoding="async">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+          </span>
+          <span class="shot__cap">
+            <span class="pill pill--badge">02</span>
+            <span class="shot__title">L’espace shampoing</span>
+            <span class="shot__text">Le bac à shampoing et un poste prêt pour le client suivant.</span>
+          </span>
+        </a>
+
+        <a class="shot" href="assets/img/galerie/coupe-enfant.jpg" data-shot data-cursor="Agrandir">
+          <span class="shot__frame">
+            <img src="assets/img/galerie/coupe-enfant.jpg" alt="Le barbier coupe les cheveux d’un enfant installé sous une cape à motifs de dinosaures." width="1170" height="1415" loading="lazy" decoding="async">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+          </span>
+          <span class="shot__cap">
+            <span class="pill pill--badge">03</span>
+            <span class="shot__title">Coupe enfant</span>
+            <span class="shot__text">Une coupe tout en douceur, sous une cape à dinosaures.</span>
+          </span>
+        </a>
+
+        <a class="shot shot--drop" href="assets/img/galerie/coupe-tondeuse.jpg" data-shot data-cursor="Agrandir">
+          <span class="shot__frame">
+            <img src="assets/img/galerie/coupe-tondeuse.jpg" alt="Le barbier coupe à la tondeuse les cheveux d’un client à la barbe blanche, sous une cape rayée noir et blanc." width="1170" height="983" loading="lazy" decoding="async" style="object-position: 65% 50%">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+          </span>
+          <span class="shot__cap">
+            <span class="pill pill--badge">04</span>
+            <span class="shot__title">À la tondeuse</span>
+            <span class="shot__text">Une coupe à la tondeuse, cape rayée de rigueur.</span>
+          </span>
+        </a>
+
+        <a class="shot" href="assets/img/galerie/finitions.jpg" data-shot data-cursor="Agrandir">
+          <span class="shot__frame">
+            <img src="assets/img/galerie/finitions.jpg" alt="Un enfant sous une cape à dinosaures pendant que le barbier dessine ses contours au peigne." width="1170" height="1438" loading="lazy" decoding="async">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+          </span>
+          <span class="shot__cap">
+            <span class="pill pill--badge">05</span>
+            <span class="shot__title">Les finitions</span>
+            <span class="shot__text">Les contours se dessinent au peigne, puis aux ciseaux.</span>
+          </span>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- APPEL À RÉSERVER -->
+    <section class="section gcta" aria-labelledby="gcta-title">
+      <div class="wrap gcta__inner">
+        <span class="pill pill--badge">Réservation</span>
+        <h2 class="display" id="gcta-title">
+          <span class="line">À votre tour</span>
+          <span class="line">de passer au fauteuil.</span>
+        </h2>
+        <a class="pill pill--xl" href="index.html#reservation" data-booking data-magnetic data-roll>Réserver mon créneau</a>
+        <p class="status" data-open-status><i aria-hidden="true"></i><span>Horaires à renseigner</span></p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__top">
+      <nav class="footer__nav" aria-label="Liens utiles">
+        <a href="index.html" data-roll>Accueil</a>
+        <a href="#" data-roll>Instagram</a>
+        <a href="#" data-roll>Facebook</a>
+        <a href="#" data-roll>Mentions légales</a>
+      </nav>
+      <a class="pill" href="#top" data-magnetic data-roll>Haut de page ↑</a>
+    </div>
+
+    <div class="footer__mark" aria-hidden="true">
+      <span>F</span><span>B</span><span class="sp"></span><span>B</span><span>A</span><span>R</span><span>B</span><span>E</span><span>R</span>
+    </div>
+
+    <div class="wrap footer__bottom mono">
+      <span>© <span data-year>2026</span> FB Barber</span>
+      <span>Tous droits réservés</span>
+    </div>
+  </footer>
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="cursor" aria-hidden="true">
+    <div class="cursor__ring"><span class="cursor__label"></span></div>
+    <div class="cursor__dot"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="assets/js/site.js"></script>
+</body>
+</html>
