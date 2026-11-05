@@ -4,55 +4,23 @@
 (() => {
   'use strict';
 
-  /* =====================================================================
-     CONFIGURATION DU SALON
-     Tout ce qui change d'un salon à l'autre se règle ici : coordonnées,
-     horaires, prestations et envoi des demandes de rendez-vous.
-     ===================================================================== */
-  const SALON = {
+  /* La configuration du salon (coordonnées, horaires, prestations, réservation) se trouve
+     dans assets/js/salon.js : ce fichier est lu à la fois par le site et par le serveur. */
+  const SALON = Object.assign({
     name: 'FB Barber',
-
-    // Coordonnées affichées sur le site. Laissées vides, elles s'affichent « À renseigner ».
-    address: '', // ex. '12 rue Exemple, 00000 Ville'
-    phone: '', // ex. '06 12 34 56 78'
-    email: '', // ex. 'contact@exemple.fr'
-
-    // Envoi des demandes de rendez-vous, par ordre de priorité :
-    // 1. bookingEndpoint : adresse d'un service de formulaire qui accepte du JSON
-    //    (Formspree, Getform, script maison…). La demande part sans quitter le site.
-    // 2. whatsapp : numéro au format international, chiffres seulement (ex. '33612345678').
-    //    WhatsApp s'ouvre avec le message déjà rédigé, le client n'a plus qu'à l'envoyer.
-    // 3. email (ci-dessus) : la messagerie du client s'ouvre avec la demande rédigée.
-    // Si rien n'est renseigné, le module fonctionne en mode démonstration (aucun envoi).
+    address: '',
+    phone: '',
+    email: '',
+    api: '',
     bookingEndpoint: '',
     whatsapp: '',
-
-    // Horaires d'ouverture. 0 = dimanche, 1 = lundi … 6 = samedi.
-    // Chaque jour liste ses plages d'ouverture ; une liste vide signifie fermé.
-    hours: {
-      0: [['09:00', '19:30']],
-      1: [['14:00', '19:30']],
-      2: [['09:00', '19:30']],
-      3: [['09:00', '19:30']],
-      4: [['09:00', '19:30']],
-      5: [['09:00', '19:30']],
-      6: [['09:00', '19:30']],
-    },
-    closedDates: [], // fermetures exceptionnelles, ex. ['2026-12-25', '2027-01-01']
-    slotStep: 15, // écart entre deux créneaux proposés, en minutes
-    leadTime: 60, // délai minimum avant un rendez-vous, en minutes
-    daysAhead: 28, // nombre de jours proposés à la réservation
-
-    // Prestations : la réservation et les cartes de l'accueil lisent cette liste.
-    // L'identifiant (id) correspond à l'attribut data-service des cartes.
-    services: [
-      { id: 'coupe-homme', name: 'Coupe homme', duration: 45, price: 25 },
-      { id: 'barbe', name: 'Barbe', duration: 30, price: 15 },
-      { id: 'rasage', name: 'Rasage traditionnel', duration: 40, price: 25 },
-      { id: 'coupe-enfant', name: 'Coupe enfant', duration: 30, price: 18 },
-      { id: 'rituel', name: 'Rituel complet', duration: 90, price: 55 },
-    ],
-  };
+    hours: {},
+    closedDates: [],
+    slotStep: 15,
+    leadTime: 60,
+    daysAhead: 28,
+    services: [],
+  }, window.SALON_CONFIG || {});
 
   /* ---------- Outils ---------- */
 
@@ -836,7 +804,12 @@
   function initBooking() {
     if (!$('[data-booking]')) return;
     const services = SALON.services;
-    const state = { selected: new Set(), date: null, time: null, step: 1 };
+    const API = SALON.api ? SALON.api.replace(/\/?$/, '/') : '';
+    // backend : 'unknown' avant le premier appel, 'on' (serveur PHP présent), 'off' (site sans PHP) ou 'error'
+    const state = {
+      selected: new Set(), date: null, time: null, step: 1,
+      backend: API ? 'unknown' : 'off', backendMessage: '', remote: null, flash: '', booked: null,
+    };
 
     const dlg = document.createElement('dialog');
     dlg.className = 'booking';
@@ -868,6 +841,7 @@
 
           <section class="bstep" data-step="2" aria-labelledby="bk-t2" hidden>
             <h3 class="bstep__title" id="bk-t2" tabindex="-1">Date et heure</h3>
+            <p class="bstep__hint" data-slots-hint hidden></p>
             <div class="days-head">
               <p class="mono" data-month></p>
               <div class="days-nav">
@@ -881,7 +855,7 @@
 
           <section class="bstep" data-step="3" aria-labelledby="bk-t3" hidden>
             <h3 class="bstep__title" id="bk-t3" tabindex="-1">Vos coordonnées</h3>
-            <p class="bstep__hint">Le salon s’en sert uniquement pour confirmer votre rendez-vous.</p>
+            <p class="bstep__hint">Le salon s’en sert uniquement pour vous joindre au sujet de ce rendez-vous.</p>
             <form class="bk-form" data-form novalidate>
               <div class="field">
                 <div class="field__box">
@@ -914,6 +888,10 @@
                   <span class="field__line" aria-hidden="true"></span>
                 </div>
                 <p class="field__error"></p>
+              </div>
+              <div class="hp" aria-hidden="true">
+                <label for="bk-site">Ne pas remplir ce champ</label>
+                <input id="bk-site" name="site_web" type="text" tabindex="-1" autocomplete="off">
               </div>
               <button type="submit" hidden>Vérifier</button>
             </form>
@@ -969,6 +947,7 @@
       email: $('#bk-email', dlg),
       note: $('#bk-note', dlg),
     };
+    const honeypot = $('#bk-site', dlg);
 
     const chosen = () => services.filter((s) => state.selected.has(s.id));
     const totalDuration = () => chosen().reduce((sum, s) => sum + s.duration, 0);
@@ -976,15 +955,17 @@
     const value = (key) => fields[key].value.trim();
     const whenText = () => `${fmtLong.format(parseIso(state.date))} à ${toHHMM(state.time)}`;
     const channel = () => {
+      if (state.backend === 'on') return 'api';
       if (SALON.bookingEndpoint) return 'endpoint';
       if (SALON.whatsapp) return 'whatsapp';
       if (SALON.email) return 'email';
       return 'demo';
     };
 
-    /* Créneaux d'une journée : tous les départs possibles qui tiennent dans une plage d'ouverture.
-       Le site ne connaît pas l'agenda du salon : c'est une demande, confirmée ensuite par le salon. */
+    /* Créneaux d'une journée. Avec le serveur : uniquement les créneaux encore libres.
+       Sans serveur : tous les départs qui tiennent dans une plage d'ouverture. */
     function slotsFor(date, duration) {
+      if (state.remote && state.remote.duration === duration) return state.remote.days[isoDay(date)] || [];
       const out = [];
       if (!duration) return out;
       const now = new Date();
@@ -1027,20 +1008,90 @@
       updateUI();
     }
 
-    // Étape 2 : bande des jours puis créneaux
-    function buildDays() {
-      daysBox.textContent = '';
+    // Étape 2 : disponibilités du serveur (s'il existe), bande des jours, créneaux
+    async function loadAvailability(duration) {
+      try {
+        const res = await fetch(`${API}creneaux.php?duree=${duration}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        if (!(res.headers.get('content-type') || '').includes('application/json')) {
+          state.backend = 'off'; // site hébergé sans PHP : on garde les canaux de secours
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          state.backend = 'error';
+          state.backendMessage = data.message || 'La réservation en ligne est indisponible pour le moment.';
+          return;
+        }
+        state.backend = 'on';
+        state.remote = { duration, days: {} };
+        Object.entries(data.jours || {}).forEach(([iso, list]) => {
+          state.remote.days[iso] = list.map(toMin);
+        });
+      } catch (err) {
+        if (window.location.protocol === 'file:') {
+          state.backend = 'off';
+        } else {
+          state.backend = 'error';
+          state.backendMessage = 'Impossible de charger les créneaux libres. Vérifiez votre connexion.';
+        }
+      }
+    }
+
+    let loading = 0;
+    async function buildDays() {
       const duration = totalDuration();
+      const hint = $('[data-slots-hint]', dlg);
+      if (API && state.backend !== 'off') {
+        const token = ++loading;
+        daysBox.textContent = '';
+        slotsBox.textContent = '';
+        const wait = document.createElement('p');
+        wait.className = 'slots__empty';
+        wait.textContent = 'Chargement des créneaux libres…';
+        slotsBox.appendChild(wait);
+        state.remote = null;
+        updateUI();
+        await loadAvailability(duration);
+        if (token !== loading || state.step !== 2) return;
+        if (state.backend === 'error') {
+          renderBackendError();
+          return;
+        }
+      }
+      hint.hidden = state.backend !== 'on';
+      hint.textContent = 'Seuls les créneaux encore libres sont affichés.';
+      renderDays(duration);
+    }
+
+    function renderBackendError() {
+      state.time = null;
+      slotsBox.textContent = '';
+      const p = document.createElement('p');
+      p.className = 'bk-error';
+      p.setAttribute('role', 'alert');
+      p.textContent = `${state.backendMessage}${SALON.phone ? ` Vous pouvez aussi appeler le salon au ${SALON.phone}.` : ''}`;
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'pill';
+      retry.textContent = 'Réessayer';
+      retry.addEventListener('click', () => {
+        state.backend = 'unknown';
+        buildDays();
+      });
+      slotsBox.append(p, retry);
+      updateUI();
+    }
+
+    function renderDays(duration) {
+      daysBox.textContent = '';
       const today = new Date();
-      let first = null;
-      let last = null;
+      const dates = state.remote
+        ? Object.keys(state.remote.days).sort().map(parseIso)
+        : Array.from({ length: SALON.daysAhead }, (_, i) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + i));
       let firstAvailable = null;
-      for (let i = 0; i < SALON.daysAhead; i++) {
-        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+      dates.forEach((d) => {
         const iso = isoDay(d);
         const count = slotsFor(d, duration).length;
-        if (!first) first = d;
-        last = d;
         if (count && !firstAvailable) firstAvailable = iso;
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -1051,13 +1102,15 @@
         btn.children[0].textContent = DAY_SHORT[d.getDay()];
         btn.children[1].textContent = String(d.getDate());
         btn.children[2].textContent = fmtMonthShort.format(d).replace('.', '');
-        btn.setAttribute('aria-label', `${cap(fmtLong.format(d))}${count ? '' : ', aucun créneau'}`);
+        btn.setAttribute('aria-label', `${cap(fmtLong.format(d))}${count ? '' : ', aucun créneau libre'}`);
         btn.addEventListener('click', () => selectDate(iso, true));
         daysBox.appendChild(btn);
+      });
+      if (dates.length) {
+        const a = fmtMonthYear.format(dates[0]);
+        const b = fmtMonthYear.format(dates[dates.length - 1]);
+        $('[data-month]', dlg).textContent = a === b ? a : `${a.replace(/\s\d{4}$/, '')} – ${b}`;
       }
-      const a = fmtMonthYear.format(first);
-      const b = fmtMonthYear.format(last);
-      $('[data-month]', dlg).textContent = a === b ? a : `${a.replace(/\s\d{4}$/, '')} – ${b}`;
 
       if (!state.date || !slotsFor(parseIso(state.date), duration).length) {
         state.date = firstAvailable;
@@ -1078,6 +1131,14 @@
 
     function renderSlots(animate) {
       slotsBox.textContent = '';
+      if (state.flash) {
+        const alert = document.createElement('p');
+        alert.className = 'bk-error';
+        alert.setAttribute('role', 'alert');
+        alert.textContent = state.flash;
+        slotsBox.appendChild(alert);
+        state.flash = '';
+      }
       if (!state.date) {
         const p = document.createElement('p');
         p.className = 'slots__empty';
@@ -1236,6 +1297,7 @@
       const ch = channel();
       const call = SALON.phone ? ` Pour toute question, appelez le salon au ${SALON.phone}.` : '';
       const notices = {
+        api: 'Le créneau vous est réservé dès que vous confirmez : rien d’autre à faire.',
         endpoint: 'Votre demande part directement au salon, qui vous confirme le rendez-vous par téléphone ou SMS.',
         whatsapp: 'WhatsApp s’ouvre avec votre demande déjà rédigée : il reste à appuyer sur Envoyer. Le salon vous confirme ensuite le rendez-vous.',
         email: 'Votre messagerie s’ouvre avec la demande déjà rédigée : il reste à l’envoyer. Le salon vous confirme ensuite le rendez-vous.',
@@ -1265,18 +1327,23 @@
         action.addEventListener('click', () => send(action));
       }
       action.className = 'pill pill--xl';
-      action.textContent = { endpoint: 'Envoyer la demande', whatsapp: 'Envoyer sur WhatsApp', email: 'Envoyer par e-mail', demo: 'Envoyer la demande' }[ch];
+      action.textContent = { api: 'Confirmer le rendez-vous', endpoint: 'Envoyer la demande', whatsapp: 'Envoyer sur WhatsApp', email: 'Envoyer par e-mail', demo: 'Envoyer la demande' }[ch];
       box.appendChild(action);
     }
 
     async function send(btn) {
-      if (channel() === 'demo') {
+      const ch = channel();
+      if (ch === 'demo') {
         finish('demo');
         return;
       }
       btn.disabled = true;
       btn.textContent = 'Envoi en cours…';
       sendError.textContent = '';
+      if (ch === 'api') {
+        await sendToServer(btn);
+        return;
+      }
       try {
         const res = await fetch(SALON.bookingEndpoint, {
           method: 'POST',
@@ -1292,9 +1359,53 @@
       }
     }
 
+    /* Enregistrement sur le serveur : le créneau est revérifié au moment de l'enregistrement */
+    async function sendToServer(btn) {
+      let res = null;
+      let data = {};
+      try {
+        res = await fetch(`${API}reserver.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            prestations: chosen().map((s) => s.id),
+            date: state.date,
+            heure: toHHMM(state.time),
+            nom: value('name'),
+            telephone: value('phone'),
+            email: value('email'),
+            precision: value('note'),
+            site_web: honeypot.value,
+          }),
+        });
+        data = await res.json().catch(() => ({}));
+      } catch (err) {
+        res = null;
+      }
+      if (res && res.ok && data.ok) {
+        state.booked = data.reservation;
+        state.remote = null;
+        finish('api');
+        return;
+      }
+      if (res && res.status === 409) {
+        // Quelqu'un a pris ce créneau entre-temps : retour au choix de l'heure, disponibilités rafraîchies
+        state.flash = data.message || 'Ce créneau n’est plus disponible. Choisissez-en un autre.';
+        state.time = null;
+        show(2);
+        return;
+      }
+      btn.disabled = false;
+      btn.textContent = 'Réessayer';
+      sendError.textContent = data.message
+        || `L’enregistrement a échoué. Vérifiez votre connexion et réessayez${SALON.phone ? `, ou appelez le salon au ${SALON.phone}` : ''}.`;
+    }
+
     function finish(ch) {
       const when = whenText();
+      const callText = SALON.phone ? `appelez le salon au ${SALON.phone}` : 'contactez le salon';
       const texts = {
+        api: ['Rendez-vous confirmé', `${cap(when)} : ${chosen().map((s) => s.name).join(' + ')}. ${state.booked && state.booked.email_envoye ? 'Un e-mail de confirmation vous a été envoyé. ' : ''}Pour annuler ou déplacer votre rendez-vous, ${callText}.`],
         endpoint: ['Demande envoyée', `Le salon a reçu votre demande pour le ${when}. Il vous confirme le rendez-vous par téléphone ou SMS.`],
         whatsapp: ['Message prêt', `Votre demande pour le ${when} est rédigée dans WhatsApp. Pensez à appuyer sur Envoyer.`],
         email: ['Message prêt', `Votre demande pour le ${when} est rédigée dans votre messagerie. Pensez à l’envoyer.`],
@@ -1370,6 +1481,7 @@
     }
 
     function restart() {
+      state.booked = null;
       services.forEach((s) => setService(s.id, false));
       state.date = null;
       state.time = null;

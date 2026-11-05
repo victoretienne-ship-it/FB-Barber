@@ -1,0 +1,6 @@
+# Réglages privés du serveur de réservation (mot de passe, e-mails) : restent sur l'hébergement
+api/config.php
+
+# Base de données des réservations
+data/
+fb-barber-data/

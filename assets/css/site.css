@@ -2022,6 +2022,15 @@ dialog {
   gap: 6px;
 }
 
+/* Champ piège anti-robots : hors de l'écran, ignoré des lecteurs d'écran */
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .field__box {
   position: relative;
   padding-top: 20px;
