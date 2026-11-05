@@ -1455,6 +1455,18 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.info dd a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--color-ember-rust);
+  text-underline-offset: 0.12em;
+  transition: color 0.3s;
+}
+
+.info dd a:hover {
+  color: var(--color-ember-rust);
+}
+
 .hours {
   display: grid;
   gap: 10px;

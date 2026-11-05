@@ -10,7 +10,6 @@
     name: 'FB Barber',
     address: '',
     phone: '',
-    email: '',
     api: '',
     bookingEndpoint: '',
     whatsapp: '',
@@ -106,9 +105,26 @@
 
   /* Remplit les coordonnées, les horaires et les prix depuis la configuration */
   function initSalonInfo() {
+    // Coordonnées : téléphone cliquable, adresse ouverte dans Google Maps
     $$('[data-salon]').forEach((el) => {
-      const value = SALON[el.dataset.salon];
-      if (value) el.textContent = value;
+      const key = el.dataset.salon;
+      const value = SALON[key];
+      if (!value) return;
+      if (key !== 'phone' && key !== 'address') {
+        el.textContent = value;
+        return;
+      }
+      const link = document.createElement('a');
+      link.textContent = value;
+      if (key === 'phone') {
+        link.href = `tel:${value.replace(/[^\d+]/g, '')}`;
+      } else {
+        link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`;
+        link.target = '_blank';
+        link.rel = 'noopener';
+      }
+      el.textContent = '';
+      el.appendChild(link);
     });
 
     $$('[data-hours]').forEach((list) => {
@@ -875,14 +891,6 @@
               </div>
               <div class="field">
                 <div class="field__box">
-                  <input id="bk-email" name="email" type="email" autocomplete="email" placeholder=" " aria-describedby="bk-email-err">
-                  <label for="bk-email">E-mail (facultatif)</label>
-                  <span class="field__line" aria-hidden="true"></span>
-                </div>
-                <p class="field__error" id="bk-email-err"></p>
-              </div>
-              <div class="field">
-                <div class="field__box">
                   <textarea id="bk-note" name="note" rows="3" maxlength="300" placeholder=" "></textarea>
                   <label for="bk-note">Précision (facultatif)</label>
                   <span class="field__line" aria-hidden="true"></span>
@@ -944,7 +952,6 @@
     const fields = {
       name: $('#bk-name', dlg),
       phone: $('#bk-phone', dlg),
-      email: $('#bk-email', dlg),
       note: $('#bk-note', dlg),
     };
     const honeypot = $('#bk-site', dlg);
@@ -958,7 +965,6 @@
       if (state.backend === 'on') return 'api';
       if (SALON.bookingEndpoint) return 'endpoint';
       if (SALON.whatsapp) return 'whatsapp';
-      if (SALON.email) return 'email';
       return 'demo';
     };
 
@@ -1211,7 +1217,6 @@
         const ok = /^(?:(?:\+|00)33|0)[1-9]\d{8}$/.test(digits) || /^\+\d{8,15}$/.test(digits);
         if (!ok) msg = 'Indiquez un numéro valide, par exemple 06 12 34 56 78.';
       }
-      if (key === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) msg = 'Vérifiez l’adresse, par exemple nom@exemple.fr.';
       if (show) {
         const wrap = fields[key].closest('.field');
         wrap.classList.toggle('is-invalid', Boolean(msg));
@@ -1220,9 +1225,9 @@
       }
       return !msg;
     }
-    const formValid = (show) => ['name', 'phone', 'email'].map((k) => checkField(k, show)).every(Boolean);
+    const formValid = (show) => ['name', 'phone'].map((k) => checkField(k, show)).every(Boolean);
 
-    ['name', 'phone', 'email'].forEach((key) => {
+    ['name', 'phone'].forEach((key) => {
       fields[key].addEventListener('input', () => {
         if (fields[key].closest('.field').classList.contains('is-invalid')) checkField(key, true);
       });
@@ -1244,7 +1249,6 @@
         `Nom : ${value('name')}`,
         `Téléphone : ${value('phone')}`,
       ];
-      if (value('email')) lines.push(`E-mail : ${value('email')}`);
       if (value('note')) lines.push(`Précision : ${value('note')}`);
       return lines.join('\n');
     }
@@ -1258,7 +1262,6 @@
       heure: toHHMM(state.time),
       nom: value('name'),
       telephone: value('phone'),
-      email: value('email'),
       precision: value('note'),
       message: message(),
     });
@@ -1272,7 +1275,6 @@
         ['Nom', value('name'), 3],
         ['Téléphone', value('phone'), 3],
       ];
-      if (value('email')) rows.push(['E-mail', value('email'), 3]);
       if (value('note')) rows.push(['Précision', value('note'), 3]);
       rows.forEach(([label, text, step]) => {
         const row = document.createElement('div');
@@ -1300,7 +1302,6 @@
         api: 'Le créneau vous est réservé dès que vous confirmez : rien d’autre à faire.',
         endpoint: 'Votre demande part directement au salon, qui vous confirme le rendez-vous par téléphone ou SMS.',
         whatsapp: 'WhatsApp s’ouvre avec votre demande déjà rédigée : il reste à appuyer sur Envoyer. Le salon vous confirme ensuite le rendez-vous.',
-        email: 'Votre messagerie s’ouvre avec la demande déjà rédigée : il reste à l’envoyer. Le salon vous confirme ensuite le rendez-vous.',
         demo: 'Mode démonstration : l’envoi des demandes n’est pas encore configuré, rien ne sera transmis au salon.',
       };
       const notice = $('[data-notice]', dlg);
@@ -1311,15 +1312,11 @@
       box.textContent = '';
       sendError.textContent = '';
       let action;
-      if (ch === 'whatsapp' || ch === 'email') {
+      if (ch === 'whatsapp') {
         action = document.createElement('a');
-        if (ch === 'whatsapp') {
-          action.href = `https://wa.me/${SALON.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message())}`;
-          action.target = '_blank';
-          action.rel = 'noopener';
-        } else {
-          action.href = `mailto:${SALON.email}?subject=${encodeURIComponent('Demande de rendez-vous')}&body=${encodeURIComponent(message())}`;
-        }
+        action.href = `https://wa.me/${SALON.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message())}`;
+        action.target = '_blank';
+        action.rel = 'noopener';
         action.addEventListener('click', () => setTimeout(() => finish(ch), 200));
       } else {
         action = document.createElement('button');
@@ -1327,7 +1324,7 @@
         action.addEventListener('click', () => send(action));
       }
       action.className = 'pill pill--xl';
-      action.textContent = { api: 'Confirmer le rendez-vous', endpoint: 'Envoyer la demande', whatsapp: 'Envoyer sur WhatsApp', email: 'Envoyer par e-mail', demo: 'Envoyer la demande' }[ch];
+      action.textContent = { api: 'Confirmer le rendez-vous', endpoint: 'Envoyer la demande', whatsapp: 'Envoyer sur WhatsApp', demo: 'Envoyer la demande' }[ch];
       box.appendChild(action);
     }
 
@@ -1373,7 +1370,6 @@
             heure: toHHMM(state.time),
             nom: value('name'),
             telephone: value('phone'),
-            email: value('email'),
             precision: value('note'),
             site_web: honeypot.value,
           }),
@@ -1405,10 +1401,9 @@
       const when = whenText();
       const callText = SALON.phone ? `appelez le salon au ${SALON.phone}` : 'contactez le salon';
       const texts = {
-        api: ['Rendez-vous confirmé', `${cap(when)} : ${chosen().map((s) => s.name).join(' + ')}. ${state.booked && state.booked.email_envoye ? 'Un e-mail de confirmation vous a été envoyé. ' : ''}Pour annuler ou déplacer votre rendez-vous, ${callText}.`],
+        api: ['Rendez-vous confirmé', `${cap(when)} : ${chosen().map((s) => s.name).join(' + ')}. Pour annuler ou déplacer votre rendez-vous, ${callText}.`],
         endpoint: ['Demande envoyée', `Le salon a reçu votre demande pour le ${when}. Il vous confirme le rendez-vous par téléphone ou SMS.`],
         whatsapp: ['Message prêt', `Votre demande pour le ${when} est rédigée dans WhatsApp. Pensez à appuyer sur Envoyer.`],
-        email: ['Message prêt', `Votre demande pour le ${when} est rédigée dans votre messagerie. Pensez à l’envoyer.`],
         demo: ['Demande prête', `Mode démonstration : la demande pour le ${when} n’a pas été envoyée. Une fois l’envoi configuré, elle partira directement au salon.`],
       };
       $('[data-done-title]', dlg).textContent = texts[ch][0];

@@ -12,16 +12,15 @@ window.SALON_CONFIG = {
   "name": "FB Barber",
 
   // Coordonnées affichées sur le site. Laissées vides, elles s'affichent « À renseigner ».
-  "address": "",
-  "phone": "",
-  "email": "",
+  "address": "35 Av. Paul Doumer, Chaponost, France",
+  "phone": "+33 4 89 11 16 32",
 
   // Serveur de réservation (dossier api/ sur l'hébergement Hostinger).
   // Vide = pas de serveur : le site utilise les canaux ci-dessous.
   "api": "api/",
 
   // Canaux de secours si aucun serveur ne répond (site sans PHP) :
-  // service de formulaire, puis WhatsApp (ex. "33612345678"), puis e-mail.
+  // service de formulaire, puis WhatsApp (ex. "33612345678").
   "bookingEndpoint": "",
   "whatsapp": "",
 

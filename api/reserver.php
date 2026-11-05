@@ -2,8 +2,9 @@
 /**
  * POST api/reserver.php (JSON)
  * { prestations: ["coupe-homme", "barbe"], date: "2026-11-07", heure: "09:30",
- *   nom, telephone, email, precision, site_web (champ piège, doit rester vide) }
- * Enregistre le rendez-vous si le créneau est toujours libre, puis prévient le salon par e-mail.
+ *   nom, telephone, precision, site_web (champ piège, doit rester vide) }
+ * Enregistre le rendez-vous si le créneau est toujours libre, puis prévient le salon par e-mail
+ * (si une adresse est configurée dans config.php).
  */
 declare(strict_types=1);
 require __DIR__ . '/lib.php';
@@ -58,7 +59,6 @@ $start = fb_min($time);
 // Coordonnées
 $name = fb_clean($input['nom'] ?? '', 80);
 $phone = fb_clean($input['telephone'] ?? '', 30);
-$email = fb_clean($input['email'] ?? '', 120);
 $note = fb_clean($input['precision'] ?? '', 300);
 $errors = [];
 if (mb_strlen($name) < 2) {
@@ -66,9 +66,6 @@ if (mb_strlen($name) < 2) {
 }
 if (!fb_valid_phone($phone)) {
     $errors['telephone'] = 'Indiquez un numéro valide, par exemple 06 12 34 56 78.';
-}
-if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $errors['email'] = 'Vérifiez l’adresse e-mail.';
 }
 if ($errors) {
     fb_json(['ok' => false, 'error' => 'champs', 'message' => reset($errors), 'champs' => $errors], 422);
@@ -98,7 +95,7 @@ try {
     );
     $insert->execute([
         $date, $start, $start + $duration, json_encode($ids), $label, $price,
-        $name, $phone, $email, $note, (new DateTimeImmutable('now'))->format('Y-m-d H:i:s'), $ipHash,
+        $name, $phone, '', $note, (new DateTimeImmutable('now'))->format('Y-m-d H:i:s'), $ipHash,
     ]);
     $id = (int) $db->lastInsertId();
     $db->exec('COMMIT');
@@ -109,7 +106,7 @@ try {
     fb_json(['ok' => false, 'error' => 'serveur', 'message' => 'Le rendez-vous n’a pas pu être enregistré. Réessayez ou appelez le salon.'], 500);
 }
 
-// E-mails (après l'enregistrement : un échec d'envoi n'annule pas le rendez-vous)
+// E-mail au salon (après l'enregistrement : un échec d'envoi n'annule pas le rendez-vous)
 $when = fb_date_fr($date) . ' à ' . $time . ' (fin vers ' . fb_hhmm($start + $duration) . ')';
 $agenda = fb_site_url() . '/barber/?jour=' . $date;
 $body = "Nouveau rendez-vous\n\n"
@@ -117,21 +114,9 @@ $body = "Nouveau rendez-vous\n\n"
     . 'Prestations : ' . $label . ' (' . $price . " €)\n"
     . 'Client : ' . $name . "\n"
     . 'Téléphone : ' . $phone . "\n"
-    . ($email !== '' ? 'E-mail : ' . $email . "\n" : '')
     . ($note !== '' ? 'Précision : ' . $note . "\n" : '')
     . "\nAgenda : " . $agenda . "\n";
-fb_mail((string) $cfg['notify_email'], 'Nouveau rendez-vous : ' . fb_date_fr($date) . ' à ' . $time, $body, $email);
-
-$clientMailed = false;
-if ($email !== '' && !empty($cfg['confirm_client'])) {
-    $call = $salon['phone'] !== '' ? 'Pour annuler ou déplacer votre rendez-vous, appelez le salon au ' . $salon['phone'] . '.' : 'Pour annuler ou déplacer votre rendez-vous, contactez le salon.';
-    $clientMailed = fb_mail(
-        $email,
-        'Votre rendez-vous chez ' . $salon['name'],
-        "Bonjour {$name},\n\nVotre rendez-vous chez {$salon['name']} est enregistré :\n\n"
-            . ucfirst($when) . "\n" . $label . ' (' . $price . " €)\n\n" . $call . "\n\nÀ bientôt !\n"
-    );
-}
+fb_mail((string) $cfg['notify_email'], 'Nouveau rendez-vous : ' . fb_date_fr($date) . ' à ' . $time, $body);
 
 fb_json([
     'ok' => true,
@@ -142,6 +127,5 @@ fb_json([
         'fin' => fb_hhmm($start + $duration),
         'prestations' => $label,
         'prix' => $price,
-        'email_envoye' => $clientMailed,
     ],
 ]);

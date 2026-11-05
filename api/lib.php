@@ -22,7 +22,7 @@ function fb_config(): ?array
     if (!is_array($data) || mb_strlen((string) ($data['admin_password'] ?? '')) < 10) {
         return $cfg = null;
     }
-    $data += ['notify_email' => '', 'mail_from' => '', 'confirm_client' => true, 'data_dir' => '', 'timezone' => 'Europe/Paris'];
+    $data += ['notify_email' => '', 'mail_from' => '', 'data_dir' => '', 'timezone' => 'Europe/Paris'];
     return $cfg = $data;
 }
 

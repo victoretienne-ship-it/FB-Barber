@@ -33,9 +33,10 @@ GitHub → Settings → Deploy keys.
 Dans `public_html/api/`, copiez `config.example.php` sous le nom `config.php`, puis renseignez :
 
 - `admin_password` : le mot de passe de l'espace barbier (10 caractères minimum) ;
-- `notify_email` : l'adresse qui reçoit un e-mail à chaque nouveau rendez-vous ;
-- `mail_from` : une adresse de votre domaine, à créer dans hPanel → E-mails
-  (par exemple `reservation@votre-domaine.fr`), pour que les e-mails n'arrivent pas en indésirables.
+- `notify_email` (facultatif) : une adresse qui reçoit un e-mail à chaque nouveau rendez-vous.
+  Laissez-la vide pour ne recevoir aucun e-mail : les rendez-vous se consultent dans l'espace barbier ;
+- `mail_from` (facultatif, seulement avec `notify_email`) : une adresse de votre domaine, créée dans
+  hPanel → E-mails, pour que ces e-mails n'arrivent pas en indésirables.
 
 Tant que `config.php` n'existe pas, le site indique que la réservation en ligne n'est pas encore activée.
 
@@ -49,7 +50,8 @@ Tant que `config.php` n'existe pas, le site indique que la réservation en ligne
 
 - **Agenda** : `votre-domaine/barber/`. Sur téléphone, ajoutez la page à l'écran d'accueil.
   Elle se met à jour toute seule chaque minute.
-- **Nouveau rendez-vous** : un e-mail arrive avec le client, le téléphone et les prestations.
+- **Nouveau rendez-vous** : il apparaît dans l'agenda avec le client, le téléphone et les prestations
+  (et par e-mail si `notify_email` est renseigné).
 - **Annuler** un rendez-vous : le créneau redevient réservable (pensez à prévenir le client).
   « Rétablir » le remet si le créneau est toujours libre.
 - **Bloquer un créneau** : pause, client sans rendez-vous, absence. Le créneau n'est plus proposé en ligne.
@@ -57,8 +59,8 @@ Tant que `config.php` n'existe pas, le site indique que la réservation en ligne
   dans `assets/js/salon.js`.
 - **Lien direct vers la réservation** (bio Instagram, Google) : `votre-domaine/#rdv`.
 
-Les rendez-vous sont confirmés tout de suite pour le client : il reçoit un e-mail de confirmation
-s'il a indiqué son adresse. Pour annuler ou déplacer, il appelle le salon.
+Les rendez-vous sont confirmés tout de suite pour le client, qui ne laisse que son nom et son
+téléphone. Pour annuler ou déplacer, il appelle le salon.
 
 ## Modifier les horaires, les prestations ou les prix
 
