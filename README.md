@@ -33,10 +33,11 @@ GitHub → Settings → Deploy keys.
 Dans `public_html/api/`, copiez `config.example.php` sous le nom `config.php`, puis renseignez :
 
 - `admin_password` : le mot de passe de l'espace barbier (10 caractères minimum) ;
-- `notify_email` (facultatif) : une adresse qui reçoit un e-mail à chaque nouveau rendez-vous.
-  Laissez-la vide pour ne recevoir aucun e-mail : les rendez-vous se consultent dans l'espace barbier ;
-- `mail_from` (facultatif, seulement avec `notify_email`) : une adresse de votre domaine, créée dans
-  hPanel → E-mails, pour que ces e-mails n'arrivent pas en indésirables.
+- `mail_from` : l'expéditeur des e-mails de confirmation envoyés aux clients, une adresse de votre
+  domaine à créer dans hPanel → E-mails (par exemple `reservation@votre-domaine.fr`), pour que ces
+  e-mails n'arrivent pas en indésirables ;
+- `notify_email` (facultatif) : une adresse du salon qui reçoit un e-mail à chaque nouveau rendez-vous.
+  Vide = les rendez-vous se consultent seulement dans l'espace barbier.
 
 Tant que `config.php` n'existe pas, le site indique que la réservation en ligne n'est pas encore activée.
 
@@ -59,8 +60,9 @@ Tant que `config.php` n'existe pas, le site indique que la réservation en ligne
   dans `assets/js/salon.js`.
 - **Lien direct vers la réservation** (bio Instagram, Google) : `votre-domaine/#rdv`.
 
-Les rendez-vous sont confirmés tout de suite pour le client, qui ne laisse que son nom et son
-téléphone. Pour annuler ou déplacer, il appelle le salon.
+Les rendez-vous sont confirmés tout de suite pour le client. S'il indique son e-mail (facultatif),
+il reçoit un e-mail de confirmation avec la date, l'heure, les prestations et le numéro du salon.
+Pour annuler ou déplacer, il appelle le salon.
 
 ## Modifier les horaires, les prestations ou les prix
 

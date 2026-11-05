@@ -12,13 +12,18 @@ return [
     // Mot de passe de l'espace barbier (adresse-du-site/barber/). 10 caractères minimum.
     'admin_password' => '',
 
-    // Facultatif : adresse qui reçoit un e-mail à chaque nouveau rendez-vous.
-    // Vide = aucun e-mail : les rendez-vous se consultent dans l'espace barbier.
+    // Facultatif : adresse du salon qui reçoit un e-mail à chaque nouveau rendez-vous.
+    // Vide = aucun e-mail au salon : les rendez-vous se consultent dans l'espace barbier.
     'notify_email' => '',
 
-    // Facultatif, utile seulement avec notify_email : expéditeur des e-mails, une adresse
-    // de votre domaine créée dans hPanel > E-mails. Vide = reservation@<votre domaine>.
+    // Expéditeur des e-mails (confirmation au client, alerte au salon) : une adresse de votre
+    // domaine créée dans hPanel > E-mails, ex. 'reservation@votre-domaine.fr'.
+    // Fortement conseillé, sinon les e-mails risquent d'arriver en indésirables.
+    // Vide = reservation@<votre domaine>.
     'mail_from' => '',
+
+    // Envoyer un e-mail de confirmation au client quand il a indiqué son adresse.
+    'confirm_client' => true,
 
     // Dossier de la base de données. Vide = automatique : à côté du dossier public_html
     // (fb-barber-data), donc inaccessible depuis le web.
