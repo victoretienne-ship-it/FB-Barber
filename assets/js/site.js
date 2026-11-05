@@ -27,16 +27,16 @@
     bookingEndpoint: '',
     whatsapp: '',
 
-    // Horaires D'EXEMPLE, à remplacer. 0 = dimanche, 1 = lundi … 6 = samedi.
+    // Horaires d'ouverture. 0 = dimanche, 1 = lundi … 6 = samedi.
     // Chaque jour liste ses plages d'ouverture ; une liste vide signifie fermé.
     hours: {
-      0: [],
-      1: [],
-      2: [['09:00', '12:00'], ['14:00', '19:00']],
-      3: [['09:00', '12:00'], ['14:00', '19:00']],
-      4: [['09:00', '12:00'], ['14:00', '19:00']],
-      5: [['09:00', '12:00'], ['14:00', '19:00']],
-      6: [['09:00', '18:00']],
+      0: [['09:00', '19:30']],
+      1: [['14:00', '19:30']],
+      2: [['09:00', '19:30']],
+      3: [['09:00', '19:30']],
+      4: [['09:00', '19:30']],
+      5: [['09:00', '19:30']],
+      6: [['09:00', '19:30']],
     },
     closedDates: [], // fermetures exceptionnelles, ex. ['2026-12-25', '2027-01-01']
     slotStep: 15, // écart entre deux créneaux proposés, en minutes
