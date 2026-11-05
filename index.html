@@ -1,0 +1,2537 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>FB Barber</title>
+<meta name="description" content="FB Barber, coiffure et barbier pour homme. Coupe, barbe, rasage traditionnel et rituel complet, sur rendez-vous.">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400&family=Barlow:wght@400&family=Roboto+Mono:wght@400&display=swap">
+<style>
+/* ============================================================
+   FB BARBER, plan de conception
+   Direction : une chambre noire et verticale. Le fond reste vide,
+   les surfaces se définissent par des filets de 1 px et l'accent
+   ember ne sert qu'aux traits fins (icônes, bordures au survol,
+   curseur) et aux petits éclats. Une seule bande claire.
+   Typo : Barlow Condensed (titres, boutons), Barlow (texte long),
+   Roboto Mono (données système). Tout en graisse 400.
+   Disposition : hero plein cadre, bande claire, atelier narratif,
+   bento de prestations (la première carte fait deux colonnes),
+   parcours horizontal épinglé, réservation, pied de page.
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  --color-ember-rust: #cc6437;
+  --color-void-black: #0b0b0b;
+  --color-charcoal-surface: #272a2a;
+  --color-bone: #edebe7;
+  --color-bone-darker: #dfddd9;
+  --color-pure-white: #ffffff;
+  --color-abyss: #050505;
+  --color-steel: #484848;
+  --color-ash: #cecece;
+
+  --bg: var(--color-void-black);
+  --fg: var(--color-pure-white);
+  --surface: var(--color-charcoal-surface);
+  --hairline: rgba(206, 206, 206, 0.16);
+  --muted: rgba(255, 255, 255, 0.72);
+
+  --font-display: "Barlow Condensed", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Barlow", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --page-max-width: 1400px;
+  --section-gap: 80px;
+  --card-padding: 32px;
+  --gutter: 16px;
+  --bar-top: calc(32px + env(safe-area-inset-top, 0px));
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-io: cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+@media (min-width: 900px) {
+  :root {
+    --gutter: 32px;
+  }
+}
+
+@media (max-width: 899px) {
+  :root {
+    --section-gap: 64px;
+  }
+}
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html.menu-open {
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol,
+dl,
+dd,
+dt,
+figure {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+b,
+strong,
+th {
+  font-weight: 400;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+img,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+svg {
+  overflow: visible;
+}
+
+[id] {
+  scroll-margin-top: 110px;
+}
+
+::selection {
+  background: var(--color-ember-rust);
+  color: var(--color-void-black);
+}
+
+:focus-visible {
+  outline: 1px solid var(--color-ember-rust);
+  outline-offset: 6px;
+}
+
+.wrap {
+  width: min(100%, var(--page-max-width));
+  margin-inline: auto;
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+
+.section {
+  position: relative;
+  padding-block: var(--section-gap);
+}
+
+.center {
+  text-align: center;
+}
+
+/* ---------- Typographie ---------- */
+
+.display {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 7.4vw, 112px);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+
+.display--sm {
+  font-size: clamp(42px, 5.6vw, 84px);
+}
+
+.display--xl {
+  font-size: clamp(56px, 14vw, 220px);
+  line-height: 0.9;
+}
+
+.line {
+  display: block;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.lede {
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 44ch;
+  text-wrap: pretty;
+}
+
+/* ---------- Pilules ---------- */
+
+.pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 22px;
+  border: 1px solid var(--fg);
+  border-radius: 1440px;
+  background: transparent;
+  color: var(--fg);
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: border-color 0.5s var(--ease-out), color 0.5s var(--ease-out);
+}
+
+.pill::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border: 1px solid var(--color-ember-rust);
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.6s var(--ease-out);
+}
+
+.pill:hover,
+.pill:focus-visible {
+  border-color: var(--color-ember-rust);
+}
+
+.pill:hover::before,
+.pill:focus-visible::before {
+  transform: rotate(45deg) scale(1);
+}
+
+.pill--badge {
+  padding: 6px 12px;
+  border-color: var(--color-ash);
+}
+
+.pill--badge::before {
+  display: none;
+}
+
+.pill--badge:hover {
+  border-color: var(--color-ash);
+}
+
+.pill--xl {
+  padding: 22px 42px 22px 46px;
+  font-size: clamp(18px, 2vw, 26px);
+}
+
+.pill--xl::before {
+  left: 20px;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+}
+
+/* Impulsion ember : un filet qui s'élargit autour de l'action principale */
+.pill--xl::after {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border: 1px solid var(--color-ember-rust);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  animation: ring 3.2s var(--ease-out) infinite;
+}
+
+@keyframes ring {
+  0% {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.14);
+    opacity: 0;
+  }
+}
+
+/* Texte qui défile au survol : chaque lettre glisse vers le haut */
+.roll {
+  display: inline-flex;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.roll .c {
+  position: relative;
+  display: inline-block;
+  height: 1.2em;
+  overflow: hidden;
+}
+
+.roll .c > span {
+  display: block;
+  height: 1.2em;
+  transition: transform 0.7s var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 22ms);
+}
+
+.roll .c > span + span {
+  position: absolute;
+  left: 0;
+  top: 100%;
+}
+
+[data-roll]:hover .roll .c > span,
+[data-roll]:focus-visible .roll .c > span {
+  transform: translateY(-100%);
+}
+
+/* ---------- Bandeau d'actualités (système, en Roboto Mono) ---------- */
+
+.newsbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  height: calc(32px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  background: var(--color-abyss);
+  border-bottom: 1px solid var(--hairline);
+  overflow: hidden;
+}
+
+.newsbar__msg {
+  grid-area: 1 / 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: opacity 0.35s ease-in, transform 0.35s ease-in;
+}
+
+/* Le message entrant attend que le précédent ait disparu : pas de texte superposé */
+.newsbar__msg.is-on {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.7s var(--ease-out) 0.4s, transform 0.7s var(--ease-out) 0.4s;
+}
+
+/* ---------- En-tête ---------- */
+
+.site-header {
+  position: fixed;
+  top: var(--bar-top);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid transparent;
+  transition: transform 0.8s var(--ease-out), background-color 0.6s, border-color 0.6s;
+}
+
+.site-header.is-scrolled {
+  background: rgba(11, 11, 11, 0.82);
+  border-bottom-color: var(--hairline);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.site-header.is-hidden {
+  transform: translateY(-120%);
+}
+
+.site-header__start {
+  justify-self: start;
+}
+
+.site-header__end {
+  justify-self: end;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.brand svg {
+  width: 20px;
+  height: 20px;
+}
+
+.brand path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+
+/* ---------- Menu plein écran (ouverture en cercle depuis le bouton) ---------- */
+
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  padding-top: calc(132px + env(safe-area-inset-top, 0px));
+  padding-bottom: max(32px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  background: var(--bg);
+  clip-path: circle(0px at var(--x, 92%) var(--y, 6%));
+  visibility: hidden;
+  transition: clip-path 1s var(--ease-io), visibility 0s linear 1s;
+}
+
+.menu.is-open {
+  clip-path: circle(150vmax at var(--x, 92%) var(--y, 6%));
+  visibility: visible;
+  transition: clip-path 1s var(--ease-io), visibility 0s;
+}
+
+.menu__list {
+  display: grid;
+  gap: 6px;
+}
+
+.menu__list li {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  overflow: hidden;
+}
+
+.menu__idx {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--color-ash);
+}
+
+.menu__link {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: clamp(56px, 12vw, 176px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.menu__list li > * {
+  transform: translateY(105%);
+  transition: transform 0.9s var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 80ms + 120ms);
+}
+
+.menu.is-open .menu__list li > * {
+  transform: none;
+}
+
+.menu__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--color-ash);
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  min-height: min(760px, 88vh);
+  min-height: min(760px, 88svh);
+  padding-top: calc(170px + env(safe-area-inset-top, 0px));
+  padding-bottom: 130px;
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  text-align: center;
+}
+
+/* Fumée de marbre : un champ de bruit calculé à basse résolution, agrandi et flouté */
+.hero__marble {
+  position: absolute;
+  top: -12%;
+  left: 0;
+  width: 100%;
+  height: 124%;
+  z-index: -2;
+  filter: blur(18px);
+  opacity: 0.9;
+}
+
+.hero__stars {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hero__label {
+  position: absolute;
+  top: 50%;
+  margin-top: -8px;
+  max-width: 16ch;
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.hero__label--l {
+  left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  text-align: left;
+}
+
+.hero__label--r {
+  right: max(var(--gutter), env(safe-area-inset-right, 0px));
+  text-align: right;
+}
+
+.hero__center {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 28px;
+}
+
+.hero__mark {
+  width: clamp(72px, 8vw, 112px);
+  height: auto;
+}
+
+.hero__mark .d {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 1.1;
+  stroke-dasharray: 1 1;
+}
+
+.hero__mark .d--ash {
+  stroke: var(--color-ash);
+  opacity: 0.75;
+}
+
+.hero__mark .d--ember {
+  stroke: var(--color-ember-rust);
+}
+
+.hero__mark .core {
+  fill: var(--color-ember-rust);
+}
+
+.hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 15.2vw, 248px);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding-bottom: 0.04em;
+}
+
+.hero__title .ch {
+  display: inline-block;
+  will-change: transform;
+}
+
+.hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
+.hero__scroll {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  color: var(--color-ash);
+}
+
+.hero__scroll-line {
+  width: 1px;
+  height: 56px;
+  background: var(--color-ember-rust);
+  animation: drip 2.6s var(--ease-io) infinite;
+}
+
+@keyframes drip {
+  0% {
+    transform: scaleY(0);
+    transform-origin: 50% 0;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: 50% 0;
+  }
+  50.01% {
+    transform-origin: 50% 100%;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: 50% 100%;
+  }
+}
+
+/* ---------- Bande claire : savoir-faire en défilement ---------- */
+
+.strip {
+  position: relative;
+  overflow: hidden;
+  padding-block: 64px 72px;
+  background: var(--color-bone);
+  color: var(--color-void-black);
+}
+
+.strip__head {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.strip .pill--badge {
+  border-color: var(--color-void-black);
+  color: var(--color-void-black);
+}
+
+.strip__rows {
+  display: grid;
+  gap: 4px;
+}
+
+.strip__row {
+  overflow: hidden;
+}
+
+.strip__track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  will-change: transform;
+}
+
+.strip__word {
+  font-family: var(--font-display);
+  font-size: clamp(60px, 9.5vw, 156px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-void-black);
+  transition: color 0.4s var(--ease-out), -webkit-text-stroke-color 0.4s;
+}
+
+.strip__row--outline .strip__word {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--color-void-black);
+}
+
+.strip__word:hover {
+  color: var(--color-ember-rust);
+  -webkit-text-stroke-color: var(--color-ember-rust);
+}
+
+.strip__row--outline .strip__word:hover {
+  color: transparent;
+}
+
+.sep {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0 clamp(14px, 2.2vw, 34px);
+  border: 1px solid var(--color-ember-rust);
+  transform: rotate(45deg);
+}
+
+/* ---------- Atelier ---------- */
+
+.section-head {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  margin-bottom: 56px;
+  text-align: center;
+}
+
+.atelier__text {
+  max-width: 26em;
+  margin: 40px auto 48px;
+  font-family: var(--font-body);
+  font-size: clamp(22px, 2.5vw, 34px);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  text-wrap: pretty;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* ---------- Prestations : bento, la première carte fait deux colonnes ---------- */
+
+.bento {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  min-height: 300px;
+  padding: var(--card-padding);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  box-shadow: none;
+  color: var(--fg);
+  transition: border-color 0.6s var(--ease-out);
+  will-change: transform;
+}
+
+.card--wide {
+  grid-column: span 2;
+  min-height: 460px;
+}
+
+.card--cta {
+  grid-column: span 2;
+}
+
+/* Halo blanc flouté qui suit le curseur */
+.card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: var(--mx, 50%);
+  top: var(--my, 50%);
+  width: 340px;
+  height: 340px;
+  margin: -170px 0 0 -170px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  filter: blur(60px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s var(--ease-out);
+}
+
+.card:hover::before,
+.card:focus-visible::before {
+  opacity: 1;
+}
+
+/* Filets ember qui tracent le contour au survol */
+.edge {
+  position: absolute;
+  z-index: 2;
+  background: var(--color-ember-rust);
+  pointer-events: none;
+  transition: transform 0.6s var(--ease-io);
+}
+
+.edge--t,
+.edge--b {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.edge--r,
+.edge--l {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.edge--t {
+  top: 0;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+
+.edge--r {
+  right: 0;
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+}
+
+.edge--b {
+  bottom: 0;
+  transform-origin: 100% 50%;
+  transform: scaleX(0);
+}
+
+.edge--l {
+  left: 0;
+  transform-origin: 50% 100%;
+  transform: scaleY(0);
+}
+
+.card:hover .edge--t,
+.card:focus-visible .edge--t {
+  transform: scaleX(1);
+}
+
+.card:hover .edge--r,
+.card:focus-visible .edge--r {
+  transform: scaleY(1);
+  transition-delay: 0.15s;
+}
+
+.card:hover .edge--b,
+.card:focus-visible .edge--b {
+  transform: scaleX(1);
+  transition-delay: 0.3s;
+}
+
+.card:hover .edge--l,
+.card:focus-visible .edge--l {
+  transform: scaleY(1);
+  transition-delay: 0.45s;
+}
+
+.card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.card__title {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 2.8vw, 40px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.card--wide .card__title {
+  font-size: clamp(48px, 5.6vw, 92px);
+}
+
+.card--cta .card__title {
+  font-size: clamp(40px, 4.4vw, 68px);
+}
+
+.card__text {
+  margin-top: 18px;
+  max-width: 44ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.card__meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--hairline);
+}
+
+.card__meta .mono {
+  color: var(--color-ash);
+}
+
+.price {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.arrow {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1;
+  transition: transform 0.6s var(--ease-out), color 0.4s;
+}
+
+.card:hover .arrow {
+  transform: translateX(10px);
+  color: var(--color-ember-rust);
+}
+
+/* Icônes en trait ember : elles se redessinent au survol */
+.icon {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  fill: none;
+  stroke: var(--color-ember-rust);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon--xl {
+  width: clamp(84px, 9vw, 124px);
+  height: clamp(84px, 9vw, 124px);
+}
+
+.icon .d {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 0;
+}
+
+.card:hover .icon .d,
+.card:focus-visible .icon .d {
+  animation: draw 1.1s var(--ease-out) both;
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---------- Parcours : horizontal et épinglé sur ordinateur ---------- */
+
+.process {
+  position: relative;
+}
+
+.process__pin {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding-block: var(--section-gap);
+  overflow: hidden;
+}
+
+.process__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.process__intro {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+
+.process__count {
+  display: none;
+  color: var(--color-ash);
+}
+
+.process__track {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+
+.step {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 300px;
+  padding: var(--card-padding);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.step__num {
+  font-family: var(--font-display);
+  font-size: clamp(120px, 15vw, 220px);
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--color-ash);
+}
+
+.step .icon {
+  width: 64px;
+  height: 64px;
+}
+
+.step__title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4vw, 56px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.step__text {
+  margin-top: 14px;
+  max-width: 40ch;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+@media (min-width: 900px) {
+  .process__pin {
+    height: 100vh;
+    min-height: 620px;
+    justify-content: center;
+    gap: 48px;
+    padding-block: 0;
+  }
+
+  .process__head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    text-align: left;
+  }
+
+  .process__intro {
+    justify-items: start;
+  }
+
+  .process__count {
+    display: block;
+  }
+
+  .process__track {
+    flex-direction: row;
+    width: max-content;
+    padding-left: max(var(--gutter), calc((100vw - var(--page-max-width)) / 2 + var(--gutter)));
+    padding-right: var(--gutter);
+  }
+
+  .step {
+    width: min(78vw, 640px);
+    height: min(60vh, 520px);
+    min-height: 0;
+  }
+}
+
+/* ---------- Réservation ---------- */
+
+.contact {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-top: 1px solid var(--hairline);
+  text-align: center;
+}
+
+.contact__marble {
+  position: absolute;
+  top: -12%;
+  left: 0;
+  width: 100%;
+  height: 124%;
+  z-index: -1;
+  filter: blur(22px);
+  opacity: 0.5;
+}
+
+.contact__inner {
+  display: grid;
+  justify-items: center;
+  gap: 28px;
+}
+
+.contact__inner .pill--xl {
+  margin-top: 20px;
+}
+
+.info {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 88px;
+  border-top: 1px solid var(--hairline);
+  text-align: left;
+}
+
+.info__row {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 26px 24px 0 0;
+}
+
+.info__row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 100%;
+  height: 1px;
+  background: var(--color-ember-rust);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 0.9s var(--ease-io);
+}
+
+.info__row:hover::before {
+  transform: scaleX(1);
+}
+
+.info dt {
+  color: var(--color-ash);
+}
+
+.info dd {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 2.8vw, 42px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+/* ---------- Pied de page ---------- */
+
+.footer {
+  overflow: hidden;
+  padding-block: 40px 28px;
+  border-top: 1px solid var(--hairline);
+}
+
+.footer__top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.footer__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 28px;
+}
+
+.footer__nav a {
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.footer__mark {
+  display: flex;
+  justify-content: center;
+  margin: 56px 0 32px;
+  font-family: var(--font-display);
+  font-size: 21vw;
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.footer__mark span {
+  display: inline-block;
+  will-change: transform;
+  transition: color 0.5s var(--ease-out);
+}
+
+.footer__mark span:hover {
+  color: var(--color-ember-rust);
+}
+
+.footer__mark .sp {
+  width: 0.2em;
+}
+
+.footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-ash);
+}
+
+/* ---------- Couches globales : grain, progression, curseur ---------- */
+
+.grain {
+  position: fixed;
+  inset: -20px;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 1.4s steps(6) infinite;
+}
+
+@keyframes grain {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-8px, 6px);
+  }
+  40% {
+    transform: translate(6px, -8px);
+  }
+  60% {
+    transform: translate(-6px, 8px);
+  }
+  80% {
+    transform: translate(8px, -4px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.progress {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--bar-top);
+  z-index: 44;
+  height: 1px;
+  background: var(--color-ember-rust);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+.cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 120;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.has-cursor .cursor {
+  opacity: 1;
+}
+
+.has-cursor .cursor.is-away {
+  opacity: 0;
+}
+
+.has-cursor,
+.has-cursor * {
+  cursor: none;
+}
+
+.cursor__ring {
+  position: absolute;
+  left: -16px;
+  top: -16px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  transition: width 0.5s var(--ease-out), height 0.5s var(--ease-out), left 0.5s var(--ease-out), top 0.5s var(--ease-out), background-color 0.4s, border-color 0.4s;
+}
+
+.cursor.is-link .cursor__ring {
+  left: -28px;
+  top: -28px;
+  width: 56px;
+  height: 56px;
+}
+
+.cursor.is-label .cursor__ring {
+  left: -46px;
+  top: -46px;
+  width: 92px;
+  height: 92px;
+  background: #ffffff;
+}
+
+.cursor__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #000000;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.cursor.is-label .cursor__label {
+  opacity: 1;
+}
+
+.cursor__dot {
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+/* ---------- Mouvement réduit ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .grain,
+  .hero__scroll-line,
+  .pill--xl::after {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Tablette ---------- */
+
+@media (max-width: 899px) {
+  .bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .card--wide,
+  .card--cta {
+    grid-column: span 2;
+  }
+
+  .card {
+    min-height: 240px;
+  }
+
+  .card--wide {
+    min-height: 340px;
+  }
+
+  .section-head {
+    margin-bottom: 40px;
+  }
+
+  .hero {
+    padding-bottom: 120px;
+  }
+}
+
+/* ---------- Téléphone ---------- */
+
+@media (max-width: 559px) {
+  .site-header {
+    gap: 8px;
+  }
+
+  .site-header .pill {
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+
+  .brand {
+    font-size: 16px;
+  }
+
+  .bento {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card,
+  .card--wide,
+  .card--cta {
+    grid-column: auto;
+    min-height: 220px;
+  }
+
+  .card--wide .card__title {
+    font-size: clamp(40px, 12vw, 56px);
+  }
+
+  .hero__label {
+    top: calc(118px + env(safe-area-inset-top, 0px));
+    margin-top: 0;
+    max-width: 14ch;
+  }
+
+  .hero__ctas {
+    flex-direction: column;
+    align-items: stretch;
+    width: min(100%, 320px);
+  }
+
+  .info {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .info__row {
+    padding-bottom: 22px;
+  }
+
+  .footer__mark {
+    font-size: 19vw;
+  }
+}
+</style>
+</head>
+<body>
+<div class="page" lang="fr">
+
+  <aside class="newsbar" aria-label="Actualités">
+    <p class="newsbar__msg is-on">News • Réservations en ligne ouvertes</p>
+    <p class="newsbar__msg">News • <span data-date>Aujourd’hui</span> • Prenez votre rendez-vous</p>
+    <p class="newsbar__msg">News • Coupe, barbe, rasage, soin</p>
+  </aside>
+
+  <div class="progress" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="pill site-header__start" href="#reservation" data-booking data-magnetic data-roll>Réserver</a>
+    <a class="brand" href="#top" aria-label="FB Barber, retour en haut">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 1.5L22.5 12L12 22.5L1.5 12Z"/>
+        <path d="M12 1.5V22.5M1.5 12H22.5"/>
+      </svg>
+      <span>FB Barber</span>
+    </a>
+    <button class="pill site-header__end menu-toggle" type="button" aria-expanded="false" aria-controls="menu" data-magnetic data-roll>Menu</button>
+  </header>
+
+  <div class="menu" id="menu" aria-hidden="true">
+    <nav class="menu__nav" aria-label="Navigation principale">
+      <ul class="menu__list">
+        <li style="--i: 0"><span class="menu__idx">01</span><a class="menu__link" href="#services" data-roll>Services</a></li>
+        <li style="--i: 1"><span class="menu__idx">02</span><a class="menu__link" href="#atelier" data-roll>L’atelier</a></li>
+        <li style="--i: 2"><span class="menu__idx">03</span><a class="menu__link" href="#processus" data-roll>Processus</a></li>
+        <li style="--i: 3"><span class="menu__idx">04</span><a class="menu__link" href="#reservation" data-roll>Réservation</a></li>
+      </ul>
+    </nav>
+    <div class="menu__foot">
+      <a class="pill" href="#reservation" data-booking data-roll>Réserver un créneau</a>
+      <p class="mono">FB Barber, coupe, barbe, soin</p>
+    </div>
+  </div>
+
+  <main id="top">
+
+    <!-- HERO -->
+    <section class="hero" aria-labelledby="hero-title">
+      <canvas class="hero__marble" data-marble aria-hidden="true"></canvas>
+      <canvas class="hero__stars" data-stars aria-hidden="true"></canvas>
+
+      <p class="hero__label hero__label--l">L’art de la coupe</p>
+      <p class="hero__label hero__label--r">Le soin du détail</p>
+
+      <div class="hero__center">
+        <svg class="hero__mark" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+          <path class="d" pathLength="1" d="M60 4L116 60L60 116L4 60Z"/>
+          <path class="d d--ash" pathLength="1" d="M60 4V116"/>
+          <path class="d d--ash" pathLength="1" d="M4 60H116"/>
+          <path class="d d--ember" pathLength="1" d="M60 32L88 60L60 88L32 60Z"/>
+          <circle class="core" cx="60" cy="60" r="2.6"/>
+        </svg>
+
+        <h1 class="hero__title" id="hero-title" data-split>FB Barber</h1>
+
+        <p class="lede hero__lede">Coiffure et barbier pour homme. Des gestes précis, une finition nette et un moment rien que pour vous.</p>
+
+        <div class="hero__ctas">
+          <a class="pill" href="#reservation" data-booking data-magnetic data-roll>Prendre rendez-vous</a>
+          <a class="pill" href="#services" data-magnetic data-roll>Voir les services</a>
+        </div>
+      </div>
+
+      <a class="hero__scroll" href="#savoir-faire">
+        <span class="mono">Défiler</span>
+        <span class="hero__scroll-line" aria-hidden="true"></span>
+      </a>
+    </section>
+
+    <!-- BANDE CLAIRE : savoir-faire en défilement -->
+    <section class="strip" id="savoir-faire" aria-label="Notre savoir-faire">
+      <div class="strip__head" data-reveal>
+        <span class="pill pill--badge">Notre savoir-faire</span>
+      </div>
+      <div class="strip__rows">
+        <div class="strip__row" data-marquee="-1" data-speed="0.9">
+          <div class="strip__track">
+            <span class="strip__word">Coupe homme</span><i class="sep" aria-hidden="true"></i>
+            <span class="strip__word">Dégradé</span><i class="sep" aria-hidden="true"></i>
+            <span class="strip__word">Barbe</span><i class="sep" aria-hidden="true"></i>
+            <span class="strip__word">Rasage</span><i class="sep" aria-hidden="true"></i>
+            <span class="strip__word">Soin du cuir chevelu</span><i class="sep" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="strip__row strip__row--outline" data-marquee="1" data-speed="0.6">
+          <div class="strip__track">
+            <span class="strip__word">Conseil</span><i class="sep" aria-hidden="true"></i>
+            <span class="strip__word">Finition</span><i class="sep" aria-hidden="true"></i>
+            <span class="strip__word">Précision</span><i class="sep" aria-hidden="true"></i>
+            <span class="strip__word">Hygiène</span><i class="sep" aria-hidden="true"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ATELIER : texte qui s'allume au scroll -->
+    <section class="section atelier center" id="atelier">
+      <div class="wrap">
+        <header class="section-head">
+          <span class="pill pill--badge">01 · L’atelier</span>
+          <h2 class="display">
+            <span class="line">Une coupe.</span>
+            <span class="line">Une philosophie.</span>
+          </h2>
+        </header>
+        <p class="atelier__text" data-words>Chez FB Barber, chaque coupe commence par une écoute. On prend le temps de comprendre votre visage, la nature de vos cheveux et votre quotidien, puis on sculpte avec des gestes précis, des outils soignés et un vrai souci du détail. Le résultat doit rester net, durable et simple à reproduire chez vous.</p>
+        <ul class="chips" data-reveal>
+          <li class="pill pill--badge">Précision</li>
+          <li class="pill pill--badge">Conseil</li>
+          <li class="pill pill--badge">Hygiène</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- PRESTATIONS : bento -->
+    <section class="section services" id="services">
+      <div class="wrap">
+        <header class="section-head">
+          <span class="pill pill--badge">02 · Services</span>
+          <h2 class="display">Nos prestations</h2>
+        </header>
+
+        <div class="bento">
+          <a class="card card--wide" href="#reservation" data-booking data-card data-cursor="Réserver">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+            <div class="card__top">
+              <span class="pill pill--badge">01</span>
+              <svg class="icon icon--xl" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <path class="d" pathLength="1" d="M8 34a6 6 0 1 0 12 0a6 6 0 1 0-12 0"/>
+                <path class="d" pathLength="1" d="M28 34a6 6 0 1 0 12 0a6 6 0 1 0-12 0"/>
+                <path class="d" pathLength="1" d="M18.5 29.5L38 8"/>
+                <path class="d" pathLength="1" d="M29.5 29.5L10 8"/>
+                <path class="d" pathLength="1" d="M22.8 23.4a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0-2.4 0"/>
+              </svg>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Coupe homme</h3>
+              <p class="card__text">Une coupe sur mesure, pensée pour votre morphologie et votre routine. Shampoing et finition inclus.</p>
+            </div>
+            <div class="card__meta">
+              <span class="mono">45 min</span>
+              <span class="price">25&nbsp;€</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
+
+          <a class="card" href="#reservation" data-booking data-card data-cursor="Réserver">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+            <div class="card__top">
+              <span class="pill pill--badge">02</span>
+              <svg class="icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <path class="d" pathLength="1" d="M12 17H30V31H12A7 7 0 0 1 12 17Z"/>
+                <path class="d" pathLength="1" d="M30 20H41V28H30"/>
+                <path class="d" pathLength="1" d="M34.5 20V28M38 20V28"/>
+              </svg>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Barbe</h3>
+              <p class="card__text">Taille, dessin des contours et entretien à la tondeuse ou au rasoir, pour une barbe nette et structurée.</p>
+            </div>
+            <div class="card__meta">
+              <span class="mono">30 min</span>
+              <span class="price">15&nbsp;€</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
+
+          <a class="card" href="#reservation" data-booking data-card data-cursor="Réserver">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+            <div class="card__top">
+              <span class="pill pill--badge">03</span>
+              <svg class="icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <path class="d" pathLength="1" d="M13 27C13 11 35 11 35 27Z"/>
+                <path class="d" pathLength="1" d="M24 27V43"/>
+                <path class="d" pathLength="1" d="M19 36H29"/>
+              </svg>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Rasage traditionnel</h3>
+              <p class="card__text">Serviette chaude, mousse onctueuse et rasoir droit. Un rituel lent qui apaise la peau.</p>
+            </div>
+            <div class="card__meta">
+              <span class="mono">40 min</span>
+              <span class="price">25&nbsp;€</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
+
+          <a class="card" href="#reservation" data-booking data-card data-cursor="Réserver">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+            <div class="card__top">
+              <span class="pill pill--badge">04</span>
+              <svg class="icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <path class="d" pathLength="1" d="M7 14H41V23H7Z"/>
+                <path class="d" pathLength="1" d="M9 23V41M14 23V41M19 23V41M24 23V41M29 23V41M34 23V41M39 23V41"/>
+              </svg>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Coupe enfant</h3>
+              <p class="card__text">Une coupe patiente et soignée, dans une ambiance rassurante.</p>
+            </div>
+            <div class="card__meta">
+              <span class="mono">30 min</span>
+              <span class="price">18&nbsp;€</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
+
+          <a class="card" href="#reservation" data-booking data-card data-cursor="Réserver">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+            <div class="card__top">
+              <span class="pill pill--badge">05</span>
+              <svg class="icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <path class="d" pathLength="1" d="M24 6C30 15 36 21 36 29A12 12 0 0 1 12 29C12 21 18 15 24 6Z"/>
+              </svg>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Rituel complet</h3>
+              <p class="card__text">Coupe, barbe, soin du visage et massage du cuir chevelu. L’expérience FB Barber dans son intégralité.</p>
+            </div>
+            <div class="card__meta">
+              <span class="mono">1 h 30</span>
+              <span class="price">55&nbsp;€</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
+
+          <a class="card card--cta" href="#reservation" data-booking data-card data-cursor="Réserver">
+            <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
+            <div class="card__top">
+              <span class="pill pill--badge">Réservation</span>
+              <svg class="icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                <path class="d" pathLength="1" d="M17 8V40M31 8V40M15 8H33M15 40H33M17 18L31 12M17 28L31 22M17 38L31 32"/>
+              </svg>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Prenez un rendez-vous</h3>
+              <p class="card__text">Choisissez votre prestation et votre créneau en quelques secondes.</p>
+            </div>
+            <div class="card__meta">
+              <span class="pill">Réserver</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- PARCOURS : horizontal et épinglé sur ordinateur -->
+    <section class="process" id="processus" aria-labelledby="process-title">
+      <div class="process__pin">
+        <div class="wrap process__head">
+          <div class="process__intro">
+            <span class="pill pill--badge">03 · Processus</span>
+            <h2 class="display display--sm" id="process-title">Le parcours</h2>
+          </div>
+          <p class="mono process__count" aria-hidden="true"><span data-count>01</span> / 04</p>
+        </div>
+
+        <div class="process__track">
+          <article class="step">
+            <p class="step__num" aria-hidden="true">01</p>
+            <svg class="icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+              <path class="d" pathLength="1" d="M4 24C10 14 38 14 44 24C38 34 10 34 4 24Z"/>
+              <path class="d" pathLength="1" d="M18 24a6 6 0 1 0 12 0a6 6 0 1 0-12 0"/>
+            </svg>
+            <div>
+              <h3 class="step__title">Consultation</h3>
+              <p class="step__text">On commence par vous écouter : vos envies, votre routine, le style que vous voulez porter.</p>
+            </div>
+          </article>
+
+          <article class="step">
+            <p class="step__num" aria-hidden="true">02</p>
+            <svg class="icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+              <path class="d" pathLength="1" d="M8 34a6 6 0 1 0 12 0a6 6 0 1 0-12 0"/>
+              <path class="d" pathLength="1" d="M28 34a6 6 0 1 0 12 0a6 6 0 1 0-12 0"/>
+              <path class="d" pathLength="1" d="M18.5 29.5L38 8"/>
+              <path class="d" pathLength="1" d="M29.5 29.5L10 8"/>
+            </svg>
+            <div>
+              <h3 class="step__title">Coupe</h3>
+              <p class="step__text">Shampoing, coupe et contours, réalisés avec des outils de précision et des gestes maîtrisés.</p>
+            </div>
+          </article>
+
+          <article class="step">
+            <p class="step__num" aria-hidden="true">03</p>
+            <svg class="icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+              <path class="d" pathLength="1" d="M7 14H41V23H7Z"/>
+              <path class="d" pathLength="1" d="M9 23V41M14 23V41M19 23V41M24 23V41M29 23V41M34 23V41M39 23V41"/>
+            </svg>
+            <div>
+              <h3 class="step__title">Finition</h3>
+              <p class="step__text">Séchage, coiffage et conseils pour reproduire le résultat chez vous, chaque jour.</p>
+            </div>
+          </article>
+
+          <article class="step">
+            <p class="step__num" aria-hidden="true">04</p>
+            <svg class="icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+              <path class="d" pathLength="1" d="M24 6C30 15 36 21 36 29A12 12 0 0 1 12 29C12 21 18 15 24 6Z"/>
+            </svg>
+            <div>
+              <h3 class="step__title">Rituel</h3>
+              <p class="step__text">Un moment de détente pour clore la séance : serviette chaude, soin et dernier regard dans le miroir.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- RÉSERVATION -->
+    <section class="section contact" id="reservation" aria-labelledby="contact-title">
+      <canvas class="contact__marble" data-marble aria-hidden="true"></canvas>
+      <div class="wrap contact__inner">
+        <span class="pill pill--badge">04 · Réservation</span>
+        <h2 class="display display--xl" id="contact-title">
+          <span class="line">Prenez</span>
+          <span class="line">votre place.</span>
+        </h2>
+        <a class="pill pill--xl" href="#reservation" data-booking data-magnetic data-roll>Réserver mon créneau</a>
+
+        <dl class="info" data-reveal>
+          <div class="info__row">
+            <dt class="mono">Adresse</dt>
+            <dd>À renseigner</dd>
+          </div>
+          <div class="info__row">
+            <dt class="mono">Téléphone</dt>
+            <dd>À renseigner</dd>
+          </div>
+          <div class="info__row">
+            <dt class="mono">Horaires</dt>
+            <dd>À renseigner</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__top">
+      <nav class="footer__nav" aria-label="Liens utiles">
+        <a href="#" data-roll>Instagram</a>
+        <a href="#" data-roll>Facebook</a>
+        <a href="#" data-roll>Mentions légales</a>
+      </nav>
+      <a class="pill" href="#top" data-magnetic data-roll>Haut de page ↑</a>
+    </div>
+
+    <div class="footer__mark" aria-hidden="true">
+      <span>F</span><span>B</span><span class="sp"></span><span>B</span><span>A</span><span>R</span><span>B</span><span>E</span><span>R</span>
+    </div>
+
+    <div class="wrap footer__bottom mono">
+      <span>© <span data-year>2026</span> FB Barber</span>
+      <span>Tous droits réservés</span>
+    </div>
+  </footer>
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="cursor" aria-hidden="true">
+    <div class="cursor__ring"><span class="cursor__label"></span></div>
+    <div class="cursor__dot"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+/* FB Barber, interactions.
+   Le site reste lisible sans GSAP : tout ce qui relève du scroll est
+   ajouté par-dessus, et les états initiaux sont toujours visibles. */
+(() => {
+  'use strict';
+
+  const root = document.documentElement;
+  const $ = (sel, ctx = document) => ctx.querySelector(sel);
+  const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+  const reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const fineMQ = window.matchMedia('(hover: hover) and (pointer: fine)');
+  const hasGSAP = typeof window.gsap !== 'undefined' && typeof window.ScrollTrigger !== 'undefined';
+  const motion = hasGSAP && !reduceMQ.matches;
+  if (hasGSAP) gsap.registerPlugin(ScrollTrigger);
+
+  const menu = $('#menu');
+  const menuToggle = $('.menu-toggle');
+  const menuOpen = () => Boolean(menu && menu.classList.contains('is-open'));
+
+  /* Découpe un titre en lettres (une par span, masquées aux lecteurs d'écran) */
+  function splitChars(el) {
+    const text = el.textContent.trim();
+    el.setAttribute('aria-label', text);
+    el.textContent = '';
+    return [...text].map((ch, i) => {
+      const s = document.createElement('span');
+      s.className = 'ch';
+      s.setAttribute('aria-hidden', 'true');
+      s.style.setProperty('--i', i);
+      s.textContent = ch === ' ' ? ' ' : ch;
+      el.appendChild(s);
+      return s;
+    });
+  }
+
+  /* Prépare le défilement de texte au survol (deux copies de chaque lettre) */
+  function buildRolls() {
+    $$('[data-roll]').forEach((el) => {
+      const text = el.textContent.trim();
+      if (!text || el.querySelector('.roll')) return;
+      el.setAttribute('aria-label', text);
+      const wrap = document.createElement('span');
+      wrap.className = 'roll';
+      wrap.setAttribute('aria-hidden', 'true');
+      [...text].forEach((ch, i) => {
+        const c = document.createElement('span');
+        c.className = 'c';
+        c.style.setProperty('--i', i);
+        const a = document.createElement('span');
+        a.textContent = ch === ' ' ? ' ' : ch;
+        const b = document.createElement('span');
+        b.textContent = a.textContent;
+        c.append(a, b);
+        wrap.appendChild(c);
+      });
+      el.textContent = '';
+      el.appendChild(wrap);
+    });
+  }
+
+  /* Bandeau : date du jour et messages qui tournent */
+  function initNewsBar() {
+    const dateEl = $('[data-date]');
+    if (dateEl) {
+      const d = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
+      dateEl.textContent = d.replace('.', '');
+    }
+    const msgs = $$('.newsbar__msg');
+    if (msgs.length < 2 || reduceMQ.matches) return;
+    let i = 0;
+    setInterval(() => {
+      msgs[i].classList.remove('is-on');
+      i = (i + 1) % msgs.length;
+      msgs[i].classList.add('is-on');
+    }, 3800);
+  }
+
+  /* En-tête : fond au scroll, masquage quand on descend, barre de progression */
+  function initHeader() {
+    const header = $('.site-header');
+    const bar = $('.progress');
+    let lastY = window.scrollY;
+    let queued = false;
+
+    const update = () => {
+      queued = false;
+      const y = window.scrollY;
+      const max = root.scrollHeight - window.innerHeight;
+      if (bar) bar.style.transform = `scaleX(${max > 0 ? clamp(y / max, 0, 1) : 0})`;
+      if (!header) return;
+      header.classList.toggle('is-scrolled', y > 40);
+      const delta = y - lastY;
+      if (menuOpen() || y < 320) header.classList.remove('is-hidden');
+      else if (delta > 4) header.classList.add('is-hidden');
+      else if (delta < -4) header.classList.remove('is-hidden');
+      if (Math.abs(delta) > 4) lastY = y;
+    };
+    const request = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(update);
+    };
+    window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('resize', request);
+    update();
+  }
+
+  /* Menu : ouverture en cercle depuis le bouton, fermeture par Échap ou lien */
+  function setMenu(open) {
+    if (!menu || !menuToggle) return;
+    if (open) {
+      const r = menuToggle.getBoundingClientRect();
+      menu.style.setProperty('--x', `${r.left + r.width / 2}px`);
+      menu.style.setProperty('--y', `${r.top + r.height / 2}px`);
+    }
+    menu.classList.toggle('is-open', open);
+    menu.setAttribute('aria-hidden', open ? 'false' : 'true');
+    menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    root.classList.toggle('menu-open', open);
+  }
+
+  function initMenu() {
+    if (!menu || !menuToggle) return;
+    menuToggle.addEventListener('click', () => setMenu(!menuOpen()));
+    menu.addEventListener('click', (e) => {
+      if (e.target.closest('a')) setMenu(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menuOpen()) {
+        setMenu(false);
+        menuToggle.focus();
+      }
+    });
+  }
+
+  /* Bandes de savoir-faire : défilement continu, accéléré par la vitesse du scroll */
+  function initMarquees() {
+    $$('.strip__row').forEach((row) => {
+      const track = $('.strip__track', row);
+      if (!track) return;
+      // Copie pour une boucle sans couture (la copie est masquée aux lecteurs d'écran)
+      [...track.children].forEach((node) => {
+        const copy = node.cloneNode(true);
+        copy.setAttribute('aria-hidden', 'true');
+        track.appendChild(copy);
+      });
+      if (!motion) return;
+
+      const dir = Number(row.dataset.marquee) < 0 ? -1 : 1;
+      const speed = Number(row.dataset.speed) || 0.8;
+      let half = track.scrollWidth / 2;
+      let x = 0;
+      let boost = 0;
+      let lastY = window.scrollY;
+      window.addEventListener('resize', () => {
+        half = track.scrollWidth / 2;
+      });
+
+      gsap.ticker.add((time, delta) => {
+        const k = clamp(delta / 16.67, 0.5, 3);
+        const y = window.scrollY;
+        const v = clamp((y - lastY) * 1.2, -40, 40);
+        lastY = y;
+        boost += (Math.abs(v) - boost) * 0.1;
+        x += dir * (speed + boost * 0.25) * k;
+        if (half > 0) {
+          if (x <= -half) x += half;
+          if (x >= 0) x -= half;
+        }
+        track.style.transform = `translate3d(${x.toFixed(2)}px, 0, 0)`;
+      });
+    });
+  }
+
+  /* Canvas : constellation et braises dans le hero */
+  function starfield(canvas, reduce) {
+    const ctx = canvas.getContext('2d');
+    const host = canvas.parentElement;
+    const narrow = window.innerWidth < 700;
+    const STARS = narrow ? 44 : 84;
+    const EMBERS = narrow ? 14 : 30;
+    const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+    const LINK = 150;
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const ptr = { x: -9999, y: -9999 };
+    let w = 0;
+    let h = 0;
+    let stars = [];
+    let embers = [];
+    let raf = 0;
+    let running = false;
+
+    const ember = (fresh) => ({
+      x: rnd(0, w),
+      y: fresh ? rnd(0, h) : h + rnd(0, 30),
+      vx: rnd(-0.12, 0.12),
+      vy: rnd(-0.9, -0.3),
+      r: rnd(0.6, 1.6),
+      a: rnd(0.35, 0.9),
+    });
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      w = rect.width;
+      h = rect.height;
+      canvas.width = Math.round(w * DPR);
+      canvas.height = Math.round(h * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      stars = Array.from({ length: STARS }, () => ({
+        x: rnd(0, w), y: rnd(0, h), vx: rnd(-0.14, 0.14), vy: rnd(-0.14, 0.14), r: rnd(0.4, 1.2),
+      }));
+      embers = Array.from({ length: EMBERS }, () => ember(true));
+      if (reduce) draw();
+    };
+
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h);
+      if (!reduce) {
+        for (const p of stars) {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < -10) p.x = w + 10;
+          if (p.x > w + 10) p.x = -10;
+          if (p.y < -10) p.y = h + 10;
+          if (p.y > h + 10) p.y = -10;
+          const dx = ptr.x - p.x;
+          const dy = ptr.y - p.y;
+          if (Math.hypot(dx, dy) < 180) {
+            p.x += dx * 0.004;
+            p.y += dy * 0.004;
+          }
+        }
+      }
+
+      // Filets de constellation
+      ctx.lineWidth = 0.6;
+      for (let i = 0; i < stars.length; i++) {
+        const a = stars[i];
+        for (let j = i + 1; j < stars.length; j++) {
+          const b = stars[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < LINK * LINK) {
+            ctx.strokeStyle = `rgba(206, 206, 206, ${((1 - Math.sqrt(d2) / LINK) * 0.26).toFixed(3)})`;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.75;
+      for (const p of stars) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Braises qui montent
+      ctx.fillStyle = '#cc6437';
+      for (const s of embers) {
+        if (!reduce) {
+          s.x += s.vx;
+          s.y += s.vy;
+          s.a -= 0.0009;
+          if (s.y < -10 || s.a <= 0) Object.assign(s, ember(false));
+        }
+        ctx.globalAlpha = clamp(s.a, 0, 1);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    const frame = () => {
+      draw();
+      if (running) raf = requestAnimationFrame(frame);
+    };
+    const start = () => {
+      if (reduce || running) return;
+      running = true;
+      raf = requestAnimationFrame(frame);
+    };
+    const stop = () => {
+      running = false;
+      cancelAnimationFrame(raf);
+    };
+
+    host.addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      ptr.x = e.clientX - r.left;
+      ptr.y = e.clientY - r.top;
+    });
+    host.addEventListener('pointerleave', () => {
+      ptr.x = -9999;
+      ptr.y = -9999;
+    });
+    window.addEventListener('resize', resize);
+    new IntersectionObserver((entries) => {
+      entries.forEach((en) => (en.isIntersecting ? start() : stop()));
+    }).observe(canvas);
+    resize();
+  }
+
+  /* Canvas : fumée de marbre, calculée à basse résolution puis agrandie (flou naturel) */
+  function marble(canvas, reduce) {
+    const ctx = canvas.getContext('2d');
+    const CELL = 10;
+    let w = 0;
+    let h = 0;
+    let img = null;
+    let t = Math.random() * 6;
+    let raf = 0;
+    let running = false;
+
+    const paint = () => {
+      const d = img.data;
+      for (let y = 0; y < h; y++) {
+        const ny = (y / h) * 2 - 1;
+        for (let x = 0; x < w; x++) {
+          const nx = (x / w) * 2 - 1;
+          const a = Math.sin(nx * 2.1 + t + Math.sin(ny * 2.6 - t * 0.7) * 1.6);
+          const b = Math.sin(ny * 2.4 - t * 0.8 + Math.cos(nx * 1.7 + t * 0.5) * 1.4);
+          const c = Math.sin((nx + ny) * 1.9 + t * 0.45);
+          const e = Math.sin(Math.hypot(nx * 1.3, ny * 1.9) * 3.4 - t * 1.05);
+          const v = (a + b + c * 0.7 + e * 0.9) / 3.3;
+          const g = 12 + Math.pow(v * 0.5 + 0.5, 2.2) * 54;
+          const i = (y * w + x) * 4;
+          d[i] = g;
+          d[i + 1] = g;
+          d[i + 2] = g;
+          d[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    };
+
+    const frame = () => {
+      t += 0.006;
+      paint();
+      if (running) raf = requestAnimationFrame(frame);
+    };
+    const start = () => {
+      if (reduce || running) return;
+      running = true;
+      raf = requestAnimationFrame(frame);
+    };
+    const stop = () => {
+      running = false;
+      cancelAnimationFrame(raf);
+    };
+    const resize = () => {
+      const r = canvas.getBoundingClientRect();
+      w = Math.max(24, Math.round(r.width / CELL));
+      h = Math.max(16, Math.round(r.height / CELL));
+      canvas.width = w;
+      canvas.height = h;
+      img = ctx.createImageData(w, h);
+      if (reduce) paint();
+    };
+    window.addEventListener('resize', resize);
+    new IntersectionObserver((entries) => {
+      entries.forEach((en) => (en.isIntersecting ? start() : stop()));
+    }).observe(canvas);
+    resize();
+  }
+
+  function initCanvases() {
+    const reduce = reduceMQ.matches;
+    $$('[data-stars]').forEach((c) => starfield(c, reduce));
+    $$('[data-marble]').forEach((c) => marble(c, reduce));
+  }
+
+  /* Curseur personnalisé (souris uniquement) : anneau qui s'agrandit sur les liens */
+  function initCursor() {
+    if (!fineMQ.matches || reduceMQ.matches) return;
+    const c = $('.cursor');
+    if (!c) return;
+    const label = $('.cursor__label', c);
+    const mouse = { x: -200, y: -200 };
+    const pos = { x: -200, y: -200 };
+    root.classList.add('has-cursor');
+
+    window.addEventListener('pointermove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    }, { passive: true });
+
+    const loop = () => {
+      pos.x += (mouse.x - pos.x) * 0.2;
+      pos.y += (mouse.y - pos.y) * 0.2;
+      c.style.transform = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`;
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+
+    document.addEventListener('pointerover', (e) => {
+      const hit = e.target.closest ? e.target.closest('a, button, [data-cursor]') : null;
+      const text = hit ? hit.dataset.cursor : '';
+      c.classList.toggle('is-link', Boolean(hit) && !text);
+      c.classList.toggle('is-label', Boolean(text));
+      if (label) label.textContent = text || '';
+    });
+    root.addEventListener('mouseleave', () => c.classList.add('is-away'));
+    root.addEventListener('mouseenter', () => c.classList.remove('is-away'));
+  }
+
+  /* Effet aimant sur les boutons (souris uniquement) */
+  function initMagnetic() {
+    if (!motion || !fineMQ.matches) return;
+    $$('[data-magnetic]').forEach((el) => {
+      const qx = gsap.quickTo(el, 'x', { duration: 0.6, ease: 'power3.out' });
+      const qy = gsap.quickTo(el, 'y', { duration: 0.6, ease: 'power3.out' });
+      el.addEventListener('pointermove', (e) => {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2 - gsap.getProperty(el, 'x');
+        const cy = r.top + r.height / 2 - gsap.getProperty(el, 'y');
+        qx((e.clientX - cx) * 0.28);
+        qy((e.clientY - cy) * 0.36);
+      });
+      el.addEventListener('pointerleave', () => {
+        qx(0);
+        qy(0);
+      });
+    });
+  }
+
+  /* Cartes : légère inclinaison 3D et halo qui suit le curseur */
+  function initCards() {
+    if (!motion || !fineMQ.matches) return;
+    $$('.card').forEach((card) => {
+      gsap.set(card, { transformPerspective: 900, transformOrigin: '50% 50%' });
+      const rx = gsap.quickTo(card, 'rotationX', { duration: 0.8, ease: 'power3.out' });
+      const ry = gsap.quickTo(card, 'rotationY', { duration: 0.8, ease: 'power3.out' });
+      card.addEventListener('pointermove', (e) => {
+        const r = card.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width;
+        const py = (e.clientY - r.top) / r.height;
+        card.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`);
+        card.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
+        rx((0.5 - py) * 8);
+        ry((px - 0.5) * 8);
+      });
+      card.addEventListener('pointerleave', () => {
+        rx(0);
+        ry(0);
+      });
+    });
+  }
+
+  /* Pied de page : les lettres s'écartent du curseur puis reviennent */
+  function initDodge() {
+    if (!motion || !fineMQ.matches) return;
+    const mark = $('.footer__mark');
+    if (!mark) return;
+    const letters = $$('span:not(.sp)', mark);
+    mark.addEventListener('pointermove', (e) => {
+      letters.forEach((l) => {
+        const r = l.getBoundingClientRect();
+        const dx = r.left + r.width / 2 - e.clientX;
+        const dy = r.top + r.height / 2 - e.clientY;
+        const d = Math.hypot(dx, dy) || 1;
+        const f = Math.max(0, 1 - d / 240);
+        gsap.to(l, {
+          x: (dx / d) * f * 70,
+          y: (dy / d) * f * 36,
+          rotation: (dx / d) * f * 10,
+          duration: 0.6,
+          ease: 'power3.out',
+          overwrite: 'auto',
+        });
+      });
+    });
+    mark.addEventListener('pointerleave', () => {
+      gsap.to(letters, {
+        x: 0, y: 0, rotation: 0, duration: 1.1, ease: 'elastic.out(1, 0.5)', overwrite: 'auto',
+      });
+    });
+  }
+
+  /* Hero : intro (le monogramme se dessine, les lettres se lèvent). Rien n'est masqué. */
+  function heroIntro(chars) {
+    const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
+    tl.from('.hero__mark .d', { strokeDashoffset: 1, duration: 1.8, ease: 'power2.inOut', stagger: 0.16 }, 0)
+      .from('.hero__mark .core', { scale: 0, duration: 0.9, ease: 'back.out(3)', transformOrigin: '50% 50%' }, 1.3)
+      .from(chars, { yPercent: 24, rotation: 6, transformOrigin: '0% 100%', duration: 1.3, stagger: 0.05 }, 0.2)
+      .from('.hero__label', { y: 14, duration: 1.2, stagger: 0.12 }, 0.6)
+      .from('.hero__lede, .hero__ctas > *', { y: 22, duration: 1.2, stagger: 0.1 }, 0.8)
+      .from('.hero__scroll', { y: 10, duration: 1.2 }, 1.1);
+  }
+
+  /* Hero au scroll : les lettres s'écartent, le monogramme tourne, le fond glisse */
+  function heroScroll(chars) {
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 0.6 },
+    });
+    if (chars.length) {
+      tl.to(chars, { x: (i, _el, all) => (i - (all.length - 1) / 2) * 44, ease: 'none' }, 0);
+    }
+    tl.to('.hero__center', { yPercent: -14, ease: 'none' }, 0)
+      .to('.hero__mark', { rotation: 140, transformOrigin: '50% 50%', ease: 'none' }, 0)
+      .to('.hero__stars, .hero__marble', { yPercent: 18, ease: 'none' }, 0)
+      .to('.hero__label', { y: -60, ease: 'none' }, 0)
+      .to('.hero__scroll', { opacity: 0, ease: 'none' }, 0);
+  }
+
+  /* Révélations liées au scroll : elles déplacent, sans jamais cacher le contenu */
+  function revealOnScroll() {
+    $$('.display').forEach((heading) => {
+      const lines = $$('.line', heading);
+      gsap.fromTo(lines.length ? lines : heading, { y: 60, rotation: 2 }, {
+        y: 0,
+        rotation: 0,
+        ease: 'none',
+        scrollTrigger: { trigger: heading, start: 'top 94%', end: 'top 58%', scrub: 0.8 },
+      });
+    });
+
+    $$('[data-reveal]').forEach((el) => {
+      gsap.fromTo(el, { y: 40 }, {
+        y: 0,
+        ease: 'none',
+        scrollTrigger: { trigger: el, start: 'top 98%', end: 'top 72%', scrub: 0.6 },
+      });
+    });
+
+    $$('.bento .card').forEach((card, i) => {
+      gsap.fromTo(card, { y: 40 + (i % 2) * 24 }, {
+        y: 0,
+        ease: 'none',
+        scrollTrigger: { trigger: card, start: 'top 98%', end: 'top 66%', scrub: 0.8 },
+      });
+    });
+  }
+
+  /* Atelier : chaque mot s'allume pendant le scroll (0,45 au repos, lisible) */
+  function wordsScrub() {
+    const el = $('[data-words]');
+    if (!el) return;
+    const words = el.textContent.trim().split(/\s+/);
+    el.textContent = '';
+    const spans = words.map((w, i) => {
+      const s = document.createElement('span');
+      s.className = 'w';
+      s.textContent = w;
+      el.appendChild(s);
+      if (i < words.length - 1) el.appendChild(document.createTextNode(' '));
+      return s;
+    });
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: el, start: 'top 85%', end: 'bottom 55%', scrub: 0.6 },
+    });
+    spans.forEach((s, i) => {
+      tl.fromTo(s, { opacity: 0.45 }, { opacity: 1, ease: 'none', duration: 1 }, i);
+    });
+  }
+
+  /* Parcours : horizontal et épinglé sur ordinateur, vertical sur téléphone */
+  function processSection() {
+    const pin = $('.process__pin');
+    const track = $('.process__track');
+    const counter = $('[data-count]');
+    if (!pin || !track) return;
+
+    const mm = gsap.matchMedia();
+    mm.add('(min-width: 900px)', () => {
+      const dist = () => Math.max(0, track.scrollWidth - window.innerWidth);
+      const tween = gsap.to(track, {
+        x: () => -dist(),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: pin,
+          pin: true,
+          start: 'top top',
+          end: () => `+=${dist()}`,
+          scrub: 0.6,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            if (counter) counter.textContent = String(Math.min(4, Math.floor(self.progress * 4) + 1)).padStart(2, '0');
+          },
+        },
+      });
+
+      $$('.step', track).forEach((step) => {
+        const num = $('.step__num', step);
+        gsap.fromTo(step, { scale: 0.94 }, {
+          scale: 1,
+          ease: 'none',
+          scrollTrigger: { trigger: step, containerAnimation: tween, start: 'left 92%', end: 'left 40%', scrub: true },
+        });
+        if (num) {
+          gsap.fromTo(num, { x: 90 }, {
+            x: -60,
+            ease: 'none',
+            scrollTrigger: { trigger: step, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true },
+          });
+        }
+      });
+
+      return () => {
+        gsap.set(track, { clearProps: 'transform' });
+      };
+    });
+  }
+
+  function boot() {
+    buildRolls();
+
+    const heroTitle = $('.hero__title');
+    const heroChars = heroTitle && motion ? splitChars(heroTitle) : [];
+
+    initNewsBar();
+    initHeader();
+    initMenu();
+    initMarquees();
+    initCanvases();
+    initCursor();
+    initMagnetic();
+    initCards();
+    initDodge();
+
+    if (motion) {
+      heroIntro(heroChars);
+      heroScroll(heroChars);
+      revealOnScroll();
+      wordsScrub();
+      processSection();
+    }
+
+    const year = $('[data-year]');
+    if (year) year.textContent = String(new Date().getFullYear());
+
+    if (hasGSAP) {
+      window.addEventListener('load', () => ScrollTrigger.refresh());
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => ScrollTrigger.refresh());
+      }
+    }
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
