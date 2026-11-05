@@ -871,7 +871,7 @@
 
           <section class="bstep" data-step="3" aria-labelledby="bk-t3" hidden>
             <h3 class="bstep__title" id="bk-t3" tabindex="-1">Vos coordonnées</h3>
-            <p class="bstep__hint">Le salon s’en sert uniquement pour vous joindre au sujet de ce rendez-vous.</p>
+            <p class="bstep__hint">Le salon s’en sert uniquement pour ce rendez-vous. <a href="mentions-legales.html#donnees" target="_blank" rel="noopener">Vos données</a></p>
             <form class="bk-form" data-form novalidate>
               <div class="field">
                 <div class="field__box">
@@ -1624,6 +1624,26 @@
     });
   }
 
+  /* ---------- Sommaire des mentions légales : partie en cours de lecture ---------- */
+
+  function initToc() {
+    const links = $$('.toc a');
+    if (!links.length || !('IntersectionObserver' in window)) return;
+    const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        links.forEach((a) => a.removeAttribute('aria-current'));
+        const link = byId.get(entry.target.id);
+        if (link) link.setAttribute('aria-current', 'true');
+      });
+    }, { rootMargin: '-35% 0px -60% 0px' });
+    byId.forEach((_, id) => {
+      const section = document.getElementById(id);
+      if (section) observer.observe(section);
+    });
+  }
+
   /* ---------- Démarrage ---------- */
 
   function boot() {
@@ -1644,6 +1664,7 @@
     initDodge();
     initBooking();
     initLightbox();
+    initToc();
 
     if (motion) {
       heroIntro(heroChars);

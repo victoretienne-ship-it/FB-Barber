@@ -7,7 +7,7 @@ avec un vrai agenda (les créneaux pris disparaissent) et un espace privé pour 
 
 | Dossier / fichier | Rôle |
 |---|---|
-| `index.html`, `galerie.html` | Les deux pages du site |
+| `index.html`, `galerie.html`, `mentions-legales.html` | Les pages du site |
 | `assets/js/salon.js` | **Configuration du salon** : coordonnées, horaires, prestations et prix. Lu par le site et par le serveur |
 | `assets/` | Styles, scripts et photos |
 | `api/` | Serveur de réservation (PHP + base SQLite) |
@@ -71,11 +71,19 @@ les créneaux proposés et ceux acceptés par le serveur restent donc toujours i
 Format JSON : guillemets doubles, pas de virgule après le dernier élément, commentaires
 uniquement sur leur propre ligne.
 
+## Mentions légales
+
+`mentions-legales.html` contient des champs marqués « À compléter » (exploitant, forme juridique,
+SIRET, immatriculation, TVA, directeur de la publication, e-mail de contact, médiateur de la
+consommation). Ils sont obligatoires : remplissez-les avant la mise en ligne.
+
 ## Données et sécurité
 
 - Les rendez-vous sont dans `reservations.sqlite`, rangé dans `fb-barber-data/` à côté de
   `public_html` : il n'est pas accessible depuis le web. Pour le sauvegarder, téléchargez ce
   fichier depuis le gestionnaire de fichiers.
+- Les rendez-vous sont effacés automatiquement 12 mois après leur date, comme l'annoncent les
+  mentions légales.
 - `api/config.php` (mot de passe, e-mails) n'est jamais envoyé sur GitHub.
 - Deux clients ne peuvent pas obtenir le même créneau : le serveur revérifie le créneau au
   moment de l'enregistrement.

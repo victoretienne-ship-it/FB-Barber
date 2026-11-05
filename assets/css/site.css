@@ -1323,6 +1323,182 @@ svg {
   border-top: 1px solid var(--hairline);
 }
 
+/* ---------- Mentions légales ---------- */
+
+.hero--legal {
+  min-height: auto;
+  padding-bottom: 72px;
+}
+
+.hero--legal .hero__title {
+  font-size: clamp(44px, 9vw, 150px);
+}
+
+.legal__updated {
+  color: var(--color-ash);
+}
+
+.legal__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+}
+
+.toc {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.toc__title {
+  color: var(--color-ash);
+}
+
+.toc ol {
+  display: grid;
+  gap: 2px;
+}
+
+.toc a {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0 7px 14px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.3s;
+}
+
+.toc a .mono {
+  color: var(--color-ash);
+}
+
+/* Filet ember qui marque la partie en cours de lecture */
+.toc a::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--color-ember-rust);
+  transform: scaleY(0);
+  transition: transform 0.5s var(--ease-out);
+}
+
+.toc a:hover,
+.toc a[aria-current="true"] {
+  color: var(--fg);
+}
+
+.toc a[aria-current="true"]::before {
+  transform: scaleY(1);
+}
+
+.legal__body {
+  display: grid;
+  gap: 64px;
+  max-width: 72ch;
+}
+
+.legal__part {
+  display: grid;
+  gap: 18px;
+}
+
+.legal__num {
+  color: var(--color-ember-rust);
+}
+
+.legal__part h2 {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.legal__part p {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.legal__part a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--color-ember-rust);
+  text-underline-offset: 3px;
+}
+
+.legal__list {
+  display: grid;
+  border-top: 1px solid var(--hairline);
+}
+
+.legal__list > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 190px) minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.legal__list dt {
+  padding-top: 4px;
+  color: var(--color-ash);
+}
+
+.legal__list dd {
+  font-size: 16px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+/* Information légale encore manquante : bien visible tant qu'elle n'est pas remplie */
+.todo {
+  display: inline-block;
+  padding: 3px 10px;
+  border: 1px dashed var(--color-ember-rust);
+  border-radius: 1440px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--color-ember-rust);
+}
+
+@media (min-width: 900px) {
+  .legal__grid {
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 72px;
+  }
+
+  .toc {
+    position: sticky;
+    align-self: start;
+    top: calc(var(--bar-top) + 96px);
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 559px) {
+  .legal__list > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
 /* ---------- Réservation ---------- */
 
 .contact {
@@ -1749,6 +1925,13 @@ dialog {
   letter-spacing: -0.02em;
   text-transform: uppercase;
   outline: none;
+}
+
+.bstep__hint a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--color-ember-rust);
+  text-underline-offset: 3px;
 }
 
 .bstep__hint {

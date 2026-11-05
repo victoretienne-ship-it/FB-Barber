@@ -133,7 +133,26 @@ function fb_db(): PDO
             quand TEXT NOT NULL
         );
         SQL);
+    fb_purge($db);
     return $db;
+}
+
+/**
+ * Effacement automatique, une fois par jour au plus : rendez-vous passés depuis plus de
+ * 12 mois (durée annoncée dans les mentions légales) et anciens essais de connexion.
+ */
+function fb_purge(PDO $db): void
+{
+    $marker = fb_data_dir() . '/.dernier-nettoyage';
+    $today = (new DateTimeImmutable('today'))->format('Y-m-d');
+    if (is_file($marker) && trim((string) @file_get_contents($marker)) === $today) {
+        return;
+    }
+    $months = max(1, (int) ((fb_config() ?? [])['retention_months'] ?? 12));
+    $limit = (new DateTimeImmutable('today'))->modify("-{$months} months")->format('Y-m-d');
+    $db->prepare('DELETE FROM reservations WHERE date < ?')->execute([$limit]);
+    $db->prepare('DELETE FROM connexions WHERE quand < ?')->execute([(new DateTimeImmutable('-1 day'))->format('Y-m-d H:i:s')]);
+    @file_put_contents($marker, $today);
 }
 
 /** Empreinte de l'adresse IP (on ne stocke jamais l'adresse elle-même). */
