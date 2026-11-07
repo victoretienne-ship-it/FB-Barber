@@ -81,6 +81,24 @@ html.dialog-open {
   overflow: hidden;
 }
 
+/* Défilement doux (Lenis) */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -433,10 +451,8 @@ svg {
 }
 
 .site-header.is-scrolled {
-  background: rgba(11, 11, 11, 0.82);
+  background: rgba(11, 11, 11, 0.94);
   border-bottom-color: var(--hairline);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 .site-header.is-hidden {
@@ -583,11 +599,11 @@ svg {
   width: 100%;
   height: 124%;
   z-index: -2;
-  filter: blur(18px);
   opacity: 0.9;
 }
 
-/* Photo du salon très floutée derrière le titre de la galerie */
+/* Photo du salon très floutée derrière le titre de la galerie : une image minuscule, déjà floutée
+   et assombrie, simplement agrandie (aucun flou à recalculer par le navigateur) */
 .hero__photo {
   position: absolute;
   top: -10%;
@@ -597,7 +613,8 @@ svg {
   max-width: none;
   z-index: -2;
   object-fit: cover;
-  filter: blur(34px) brightness(0.42) saturate(0.75);
+  filter: blur(14px);
+  will-change: transform;
 }
 
 .hero__stars {
@@ -861,14 +878,15 @@ svg {
   content: "";
   position: absolute;
   z-index: -1;
-  left: var(--mx, 50%);
-  top: var(--my, 50%);
+  left: 0;
+  top: 0;
   width: 340px;
   height: 340px;
-  margin: -170px 0 0 -170px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
   filter: blur(60px);
+  transform: translate3d(calc(var(--mx, 0px) - 170px), calc(var(--my, 0px) - 170px), 0);
+  will-change: transform;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.6s var(--ease-out);
@@ -1516,7 +1534,6 @@ svg {
   width: 100%;
   height: 124%;
   z-index: -1;
-  filter: blur(22px);
   opacity: 0.5;
 }
 
@@ -1749,20 +1766,6 @@ dialog {
   color: var(--fg);
 }
 
-/* Le curseur personnalisé ne passe pas au-dessus des dialogues : on rend le curseur natif */
-.has-cursor.dialog-open,
-.has-cursor.dialog-open * {
-  cursor: auto;
-}
-
-.has-cursor.dialog-open :is(a, button, label, summary) {
-  cursor: pointer;
-}
-
-.has-cursor.dialog-open .cursor {
-  opacity: 0;
-}
-
 /* Panneau de réservation */
 .booking {
   position: fixed;
@@ -1773,9 +1776,7 @@ dialog {
 }
 
 .booking::backdrop {
-  background: rgba(5, 5, 5, 0.72);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  background: rgba(5, 5, 5, 0.8);
   opacity: 0;
   transition: opacity 0.6s ease;
 }
@@ -2211,6 +2212,37 @@ dialog {
   line-height: 1.5;
 }
 
+/* Raccourci vers le premier créneau libre */
+.first-slot {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px dashed var(--color-ember-rust);
+  border-radius: 1440px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--fg);
+  transition: border-color 0.3s, color 0.3s;
+}
+
+.first-slot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--color-ember-rust);
+  transform: rotate(45deg);
+}
+
+.first-slot:hover {
+  border-style: solid;
+  color: var(--color-ember-rust);
+}
+
 /* Étape 3 : coordonnées, étiquettes flottantes */
 .bk-form {
   display: grid;
@@ -2299,6 +2331,24 @@ dialog {
   color: var(--color-ember-rust);
   font-size: 13px;
   line-height: 1.4;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.remember input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-ember-rust);
 }
 
 /* Étape 4 : récapitulatif et envoi */
@@ -2421,6 +2471,107 @@ dialog {
   gap: 10px;
 }
 
+.done__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.done__links:empty {
+  display: none;
+}
+
+.done__ref {
+  flex-basis: 100%;
+  color: var(--color-ash);
+}
+
+/* ---------- Page « Mon rendez-vous » ---------- */
+
+.manage__card {
+  width: min(100%, 720px);
+  margin-inline: auto;
+  display: grid;
+  justify-items: start;
+  gap: 22px;
+  padding: var(--card-padding);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+}
+
+.manage__title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 60px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.manage__text {
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.manage__flash {
+  padding: 12px 16px;
+  border: 1px solid var(--color-ember-rust);
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.manage__list {
+  width: 100%;
+  display: grid;
+  border-top: 1px solid var(--hairline);
+}
+
+.manage__list > div {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.manage__list dt {
+  padding-top: 4px;
+  color: var(--color-ash);
+}
+
+.manage__list dd {
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.manage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.manage__confirm {
+  flex-basis: 100%;
+  font-size: 16px;
+}
+
+@media (max-width: 559px) {
+  .manage__list > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .manage__actions .pill {
+    flex: 1 1 auto;
+  }
+}
+
 /* Visionneuse de la galerie */
 .lightbox {
   position: fixed;
@@ -2522,36 +2673,21 @@ dialog {
   gap: 10px;
 }
 
-/* ---------- Couches globales : grain, progression, curseur ---------- */
+/* ---------- Couches globales : grain, progression ---------- */
 
 .grain {
   position: fixed;
-  inset: -20px;
+  inset: 0;
   z-index: 90;
   pointer-events: none;
-  opacity: 0.07;
+  opacity: 0.06;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain 1.4s steps(6) infinite;
 }
 
-@keyframes grain {
-  0% {
-    transform: translate(0, 0);
-  }
-  20% {
-    transform: translate(-8px, 6px);
-  }
-  40% {
-    transform: translate(6px, -8px);
-  }
-  60% {
-    transform: translate(-6px, 8px);
-  }
-  80% {
-    transform: translate(8px, -4px);
-  }
-  100% {
-    transform: translate(0, 0);
+/* Sur écran tactile, le grain est retiré : une couche plein écran de moins à composer */
+@media (hover: none) {
+  .grain {
+    display: none;
   }
 }
 
@@ -2568,84 +2704,6 @@ dialog {
   pointer-events: none;
 }
 
-.cursor {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 120;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-  mix-blend-mode: difference;
-  opacity: 0;
-  transition: opacity 0.4s;
-}
-
-.has-cursor .cursor {
-  opacity: 1;
-}
-
-.has-cursor .cursor.is-away {
-  opacity: 0;
-}
-
-.has-cursor,
-.has-cursor * {
-  cursor: none;
-}
-
-.cursor__ring {
-  position: absolute;
-  left: -16px;
-  top: -16px;
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #ffffff;
-  border-radius: 50%;
-  transition: width 0.5s var(--ease-out), height 0.5s var(--ease-out), left 0.5s var(--ease-out), top 0.5s var(--ease-out), background-color 0.4s, border-color 0.4s;
-}
-
-.cursor.is-link .cursor__ring {
-  left: -28px;
-  top: -28px;
-  width: 56px;
-  height: 56px;
-}
-
-.cursor.is-label .cursor__ring {
-  left: -46px;
-  top: -46px;
-  width: 92px;
-  height: 92px;
-  background: #ffffff;
-}
-
-.cursor__label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 1;
-  text-transform: uppercase;
-  color: #000000;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.cursor.is-label .cursor__label {
-  opacity: 1;
-}
-
-.cursor__dot {
-  position: absolute;
-  left: -2px;
-  top: -2px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #ffffff;
-}
-
 /* ---------- Mouvement réduit ---------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -2653,7 +2711,6 @@ dialog {
     scroll-behavior: auto;
   }
 
-  .grain,
   .hero__scroll-line,
   .pill--xl::after,
   .status.is-open i::after {

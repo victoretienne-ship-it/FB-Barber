@@ -59,7 +59,7 @@
         <span class="pill pill--badge">FB Barber · Informations</span>
         <h1 class="hero__title" id="hero-title" data-split>Mentions légales</h1>
         <p class="lede hero__lede">Qui édite ce site, qui l’héberge et ce que deviennent les informations laissées lors d’une réservation.</p>
-        <p class="mono legal__updated">Dernière mise à jour : 5 novembre 2026</p>
+        <p class="mono legal__updated">Dernière mise à jour : 7 novembre 2026</p>
       </div>
     </section>
 
@@ -137,7 +137,8 @@
             <dl class="legal__list">
               <div><dt class="mono">Responsable</dt><dd>L’exploitant du salon FB Barber (voir « Éditeur du site »).</dd></div>
               <div><dt class="mono">Données</dt><dd>Nom, téléphone, e-mail si vous l’indiquez, précision éventuelle, prestations choisies, date et heure du rendez-vous.</dd></div>
-              <div><dt class="mono">Utilisation</dt><dd>Enregistrer votre rendez-vous, vous envoyer la confirmation si vous avez donné votre e-mail, et vous joindre en cas d’imprévu.</dd></div>
+              <div><dt class="mono">Utilisation</dt><dd>Enregistrer votre rendez-vous, vous envoyer la confirmation et un rappel dans les 24 heures qui précèdent si vous avez donné votre e-mail, et vous joindre en cas d’imprévu.</dd></div>
+              <div><dt class="mono">Lien personnel</dt><dd>Chaque rendez-vous a un lien secret, affiché après la réservation et envoyé par e-mail, qui permet de le consulter, de le déplacer ou de l’annuler. Ne le partagez pas.</dd></div>
               <div><dt class="mono">Base légale</dt><dd>Les mesures prises à votre demande avant la prestation (article 6.1.b du RGPD).</dd></div>
               <div><dt class="mono">Destinataires</dt><dd>Le salon uniquement. Les données sont stockées chez l’hébergeur du site. Elles ne sont ni vendues, ni cédées, ni utilisées pour de la publicité.</dd></div>
               <div><dt class="mono">Conservation</dt><dd>12 mois après la date du rendez-vous, puis effacement automatique.</dd></div>
@@ -152,9 +153,10 @@
             <h2 id="t-cookies">Cookies et services tiers</h2>
             <p>Ce site n’utilise aucun cookie publicitaire ni outil de mesure d’audience. Aucun bandeau de consentement n’est donc nécessaire.</p>
             <dl class="legal__list">
+              <div><dt class="mono">Mémoire du formulaire</dt><dd>Si vous cochez « Se souvenir de mes coordonnées », votre nom, votre téléphone et votre e-mail sont gardés dans votre navigateur, sur votre appareil uniquement. Décochez la case lors d’une prochaine réservation pour les effacer.</dd></div>
               <div><dt class="mono">Espace barbier</dt><dd>Un cookie de session, indispensable, garde le personnel du salon connecté à son agenda. Il ne concerne pas les visiteurs.</dd></div>
               <div><dt class="mono">Polices</dt><dd>Les polices de caractères sont chargées depuis Google Fonts (Google Ireland Ltd.), qui reçoit à cette occasion votre adresse IP.</dd></div>
-              <div><dt class="mono">Animations</dt><dd>La bibliothèque d’animation est chargée depuis cdnjs (Cloudflare, Inc.), qui reçoit à cette occasion votre adresse IP.</dd></div>
+              <div><dt class="mono">Animations</dt><dd>La bibliothèque d’animation est chargée depuis cdnjs (Cloudflare, Inc.) et celle du défilement doux depuis jsDelivr. Ces services reçoivent à cette occasion votre adresse IP.</dd></div>
               <div><dt class="mono">Plan d’accès</dt><dd>Le lien vers l’adresse du salon ouvre Google Maps uniquement si vous cliquez dessus.</dd></div>
             </dl>
           </section>
@@ -192,14 +194,11 @@
 
   <div class="grain" aria-hidden="true"></div>
 
-  <div class="cursor" aria-hidden="true">
-    <div class="cursor__ring"><span class="cursor__label"></span></div>
-    <div class="cursor__dot"></div>
-  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
 <script src="assets/js/salon.js"></script>
 <script src="assets/js/site.js"></script>
 </body>

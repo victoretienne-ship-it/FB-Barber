@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Mon rendez-vous FB Barber</title>
+<meta name="description" content="Consulter, déplacer ou annuler un rendez-vous chez FB Barber.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b0b0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400&family=Barlow:wght@400&family=Roboto+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+<div class="page" lang="fr">
+
+  <aside class="newsbar" aria-label="Actualités">
+    <p class="newsbar__msg is-on">Réservation • Mon rendez-vous</p>
+    <p class="newsbar__msg">Salon • <span data-open-text>Ouvert tous les jours, le lundi dès 14h</span></p>
+    <p class="newsbar__msg">News • <span data-date>Aujourd’hui</span> • Prenez votre rendez-vous</p>
+  </aside>
+
+  <div class="progress" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="pill site-header__start" href="index.html#reservation" data-booking data-magnetic data-roll>Réserver</a>
+    <a class="brand" href="index.html" aria-label="FB Barber, accueil">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 1.5L22.5 12L12 22.5L1.5 12Z"/>
+        <path d="M12 1.5V22.5M1.5 12H22.5"/>
+      </svg>
+      <span>FB Barber</span>
+    </a>
+    <button class="pill site-header__end menu-toggle" type="button" aria-expanded="false" aria-controls="menu" data-magnetic data-roll>Menu</button>
+  </header>
+
+  <div class="menu" id="menu" aria-hidden="true">
+    <nav class="menu__nav" aria-label="Navigation principale">
+      <ul class="menu__list">
+        <li style="--i: 0"><span class="menu__idx">01</span><a class="menu__link" href="index.html#services" data-roll>Services</a></li>
+        <li style="--i: 1"><span class="menu__idx">02</span><a class="menu__link" href="index.html#atelier" data-roll>L’atelier</a></li>
+        <li style="--i: 2"><span class="menu__idx">03</span><a class="menu__link" href="index.html#processus" data-roll>Processus</a></li>
+        <li style="--i: 3"><span class="menu__idx">04</span><a class="menu__link" href="galerie.html" data-roll>Galerie</a></li>
+        <li style="--i: 4"><span class="menu__idx">05</span><a class="menu__link" href="index.html#reservation" data-roll>Réservation</a></li>
+      </ul>
+    </nav>
+    <div class="menu__foot">
+      <a class="pill" href="index.html#reservation" data-booking data-roll>Réserver un créneau</a>
+      <p class="mono">FB Barber, coupe, barbe, soin</p>
+    </div>
+  </div>
+
+  <main id="top">
+
+    <section class="hero hero--legal" aria-labelledby="hero-title">
+      <canvas class="hero__stars" data-stars aria-hidden="true"></canvas>
+      <div class="hero__center">
+        <span class="pill pill--badge">FB Barber · Réservation</span>
+        <h1 class="hero__title" id="hero-title" data-split>Mon rendez-vous</h1>
+        <p class="lede hero__lede">Consultez votre rendez-vous, ajoutez-le à votre agenda, changez de créneau ou annulez-le.</p>
+      </div>
+    </section>
+
+    <section class="section manage" aria-label="Votre rendez-vous">
+      <div class="wrap">
+        <div class="manage__card" data-manage aria-live="polite">
+          <p class="manage__text">Chargement de votre rendez-vous…</p>
+          <noscript><p class="manage__text">Cette page a besoin de JavaScript. Vous pouvez aussi appeler le salon au +33 4 89 11 16 32.</p></noscript>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__top">
+      <nav class="footer__nav" aria-label="Liens utiles">
+        <a href="index.html" data-roll>Accueil</a>
+        <a href="galerie.html" data-roll>Galerie</a>
+        <a href="mentions-legales.html" data-roll>Mentions légales</a>
+      </nav>
+      <a class="pill" href="#top" data-magnetic data-roll>Haut de page ↑</a>
+    </div>
+
+    <div class="footer__mark" aria-hidden="true">
+      <span>F</span><span>B</span><span class="sp"></span><span>B</span><span>A</span><span>R</span><span>B</span><span>E</span><span>R</span>
+    </div>
+
+    <div class="wrap footer__bottom mono">
+      <span>© <span data-year>2026</span> FB Barber</span>
+      <span>Tous droits réservés</span>
+    </div>
+  </footer>
+
+  <div class="grain" aria-hidden="true"></div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+<script src="assets/js/salon.js"></script>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

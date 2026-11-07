@@ -7,7 +7,7 @@ avec un vrai agenda (les créneaux pris disparaissent) et un espace privé pour 
 
 | Dossier / fichier | Rôle |
 |---|---|
-| `index.html`, `galerie.html`, `mentions-legales.html` | Les pages du site |
+| `index.html`, `galerie.html`, `mentions-legales.html`, `rendez-vous.html` | Les pages du site (`rendez-vous.html` : « Mon rendez-vous », lien envoyé au client) |
 | `assets/js/salon.js` | **Configuration du salon** : coordonnées, horaires, prestations et prix. Lu par le site et par le serveur |
 | `assets/` | Styles, scripts et photos |
 | `api/` | Serveur de réservation (PHP + base SQLite) |
@@ -47,6 +47,18 @@ Tant que `config.php` n'existe pas, le site indique que la réservation en ligne
 2. Sur le site, réservez un rendez-vous de test.
 3. Ouvrez `votre-domaine/barber/`, connectez-vous : le rendez-vous apparaît. Annulez-le.
 
+## Réservation en ligne
+
+- Le client choisit ses prestations, puis un créneau libre (raccourci « Le plus tôt »), et laisse
+  son nom, son téléphone et, s'il le souhaite, son e-mail. Il peut demander au site de se souvenir
+  de ses coordonnées sur son appareil.
+- Après la réservation : bouton « Ajouter à mon agenda » (fichier .ics) et lien personnel
+  « Gérer mon rendez-vous » (`rendez-vous.html?ref=…`), aussi envoyé par e-mail.
+- Depuis ce lien, le client déplace ou annule son rendez-vous jusqu'à `cancelUntil` heures avant
+  (2 h par défaut, dans `assets/js/salon.js`). Passé ce délai, il appelle le salon.
+- Rappel par e-mail dans les 24 heures avant le rendez-vous, envoyé par la tâche planifiée
+  `php …/public_html/api/rappels.php`, à lancer toutes les heures (hPanel → Avancé → Tâches Cron).
+
 ## Au quotidien, côté barbier
 
 - **Agenda** : `votre-domaine/barber/`. Sur téléphone, ajoutez la page à l'écran d'accueil.
@@ -55,7 +67,9 @@ Tant que `config.php` n'existe pas, le site indique que la réservation en ligne
   (et par e-mail si `notify_email` est renseigné).
 - **Annuler** un rendez-vous : le créneau redevient réservable (pensez à prévenir le client).
   « Rétablir » le remet si le créneau est toujours libre.
+- **Ajouter un rendez-vous** pris par téléphone ou au comptoir : il occupe le créneau en ligne.
 - **Bloquer un créneau** : pause, client sans rendez-vous, absence. Le créneau n'est plus proposé en ligne.
+- Les étiquettes indiquent les rendez-vous « Pris au salon », « Annulé par le client » et « Rappel envoyé ».
 - **Fermeture exceptionnelle** (jour férié, congés) : ajoutez la date dans `closedDates`
   dans `assets/js/salon.js`.
 - **Lien direct vers la réservation** (bio Instagram, Google) : `votre-domaine/#rdv`.

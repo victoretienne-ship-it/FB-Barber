@@ -141,7 +141,7 @@
         </header>
 
         <div class="bento">
-          <a class="card card--wide" href="#reservation" data-booking data-service="coupe-homme" data-cursor="Réserver">
+          <a class="card card--wide" href="#reservation" data-booking data-service="coupe-homme">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
             <div class="card__top">
               <span class="pill pill--badge">01</span>
@@ -164,7 +164,7 @@
             </div>
           </a>
 
-          <a class="card" href="#reservation" data-booking data-service="barbe" data-cursor="Réserver">
+          <a class="card" href="#reservation" data-booking data-service="barbe">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
             <div class="card__top">
               <span class="pill pill--badge">02</span>
@@ -185,7 +185,7 @@
             </div>
           </a>
 
-          <a class="card" href="#reservation" data-booking data-service="rasage" data-cursor="Réserver">
+          <a class="card" href="#reservation" data-booking data-service="rasage">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
             <div class="card__top">
               <span class="pill pill--badge">03</span>
@@ -206,7 +206,7 @@
             </div>
           </a>
 
-          <a class="card" href="#reservation" data-booking data-service="coupe-enfant" data-cursor="Réserver">
+          <a class="card" href="#reservation" data-booking data-service="coupe-enfant">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
             <div class="card__top">
               <span class="pill pill--badge">04</span>
@@ -226,7 +226,7 @@
             </div>
           </a>
 
-          <a class="card" href="#reservation" data-booking data-service="rituel" data-cursor="Réserver">
+          <a class="card" href="#reservation" data-booking data-service="rituel">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
             <div class="card__top">
               <span class="pill pill--badge">05</span>
@@ -245,7 +245,7 @@
             </div>
           </a>
 
-          <a class="card card--cta" href="#reservation" data-booking data-cursor="Réserver">
+          <a class="card card--cta" href="#reservation" data-booking>
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
             <div class="card__top">
               <span class="pill pill--badge">Réservation</span>
@@ -338,21 +338,21 @@
         </header>
 
         <div class="teaser__row">
-          <a class="shot" href="galerie.html" data-cursor="Galerie">
+          <a class="shot" href="galerie.html">
             <span class="shot__frame">
               <img src="assets/img/galerie/salon-postes.jpg" alt="Intérieur du salon : trois fauteuils de barbier noirs face à des miroirs ovales éclairés." width="1170" height="623" loading="lazy" decoding="async" style="object-position: 42% 50%">
               <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
             </span>
             <span class="shot__cap"><span class="shot__title">Le salon</span></span>
           </a>
-          <a class="shot" href="galerie.html" data-cursor="Galerie">
+          <a class="shot" href="galerie.html">
             <span class="shot__frame">
               <img src="assets/img/galerie/coupe-enfant.jpg" alt="Le barbier coupe les cheveux d’un enfant installé sous une cape à motifs de dinosaures." width="1170" height="1415" loading="lazy" decoding="async">
               <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
             </span>
             <span class="shot__cap"><span class="shot__title">Coupe enfant</span></span>
           </a>
-          <a class="shot" href="galerie.html" data-cursor="Galerie">
+          <a class="shot" href="galerie.html">
             <span class="shot__frame">
               <img src="assets/img/galerie/coupe-tondeuse.jpg" alt="Le barbier coupe à la tondeuse les cheveux d’un client à la barbe blanche, sous une cape rayée." width="1170" height="983" loading="lazy" decoding="async" style="object-position: 65% 50%">
               <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
@@ -425,14 +425,11 @@
 
   <div class="grain" aria-hidden="true"></div>
 
-  <div class="cursor" aria-hidden="true">
-    <div class="cursor__ring"><span class="cursor__label"></span></div>
-    <div class="cursor__dot"></div>
-  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
 <script src="assets/js/salon.js"></script>
 <script src="assets/js/site.js"></script>
 </body>

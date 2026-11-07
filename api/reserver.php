@@ -2,8 +2,9 @@
 /**
  * POST api/reserver.php (JSON)
  * { prestations: ["coupe-homme", "barbe"], date: "2026-11-07", heure: "09:30",
- *   nom, telephone, email, precision, site_web (champ piège, doit rester vide) }
- * Enregistre le rendez-vous si le créneau est toujours libre, puis prévient le salon par e-mail.
+ *   nom, telephone, email, precision, remplace (facultatif), site_web (champ piège, vide) }
+ * Enregistre le rendez-vous si le créneau est toujours libre. Avec « remplace » (jeton d'un
+ * rendez-vous existant), l'ancien rendez-vous est annulé dans la même opération : c'est un déplacement.
  */
 declare(strict_types=1);
 require __DIR__ . '/lib.php';
@@ -25,7 +26,6 @@ if (trim((string) ($input['site_web'] ?? '')) !== '') {
 }
 
 $salon = fb_salon();
-$cfg = fb_config();
 
 // Prestations : durée, prix et libellé recalculés côté serveur
 $ids = array_values(array_unique(array_map('strval', (array) ($input['prestations'] ?? []))));
@@ -74,6 +74,23 @@ if ($errors) {
     fb_json(['ok' => false, 'error' => 'champs', 'message' => reset($errors), 'champs' => $errors], 422);
 }
 
+// Déplacement : le rendez-vous d'origine doit exister et être encore modifiable
+$old = null;
+$replace = (string) ($input['remplace'] ?? '');
+if ($replace !== '') {
+    $old = fb_find_by_token($replace);
+    if (!$old) {
+        fb_json(['ok' => false, 'error' => 'introuvable', 'message' => 'Le rendez-vous à déplacer est introuvable.'], 404);
+    }
+    if ($old['statut'] === 'annule') {
+        fb_json(['ok' => false, 'error' => 'deja_annule', 'message' => 'Ce rendez-vous est déjà annulé : prenez un nouveau rendez-vous.'], 409);
+    }
+    if (!fb_can_change($old)) {
+        $call = $salon['phone'] !== '' ? ' Appelez le salon au ' . $salon['phone'] . '.' : '';
+        fb_json(['ok' => false, 'error' => 'trop_tard', 'message' => 'Ce rendez-vous ne peut plus être déplacé en ligne.' . $call], 409);
+    }
+}
+
 $db = fb_db();
 $ipHash = fb_ip_hash();
 
@@ -86,21 +103,28 @@ if ((int) $count->fetchColumn() >= 6) {
 }
 
 // Vérification du créneau et enregistrement dans la même transaction : pas de double réservation
+$now = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
+$token = fb_token();
 $db->exec('BEGIN IMMEDIATE');
 try {
-    if (!in_array($start, fb_free_slots($date, $duration), true)) {
+    $except = ($old && $old['date'] === $date) ? (int) $old['id'] : null;
+    if (!in_array($start, fb_free_slots($date, $duration, $except), true)) {
         $db->exec('ROLLBACK');
         fb_json(['ok' => false, 'error' => 'creneau_pris', 'message' => 'Ce créneau n’est plus disponible. Choisissez-en un autre.'], 409);
     }
     $insert = $db->prepare(
-        'INSERT INTO reservations (date, debut, fin, type, statut, prestations, libelle, prix, nom, telephone, email, precision, cree_le, ip_hash)
-         VALUES (?, ?, ?, \'client\', \'confirme\', ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO reservations (date, debut, fin, type, statut, prestations, libelle, prix, nom, telephone, email, precision, cree_le, ip_hash, jeton, source)
+         VALUES (?, ?, ?, \'client\', \'confirme\', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'en_ligne\')'
     );
     $insert->execute([
         $date, $start, $start + $duration, json_encode($ids), $label, $price,
-        $name, $phone, $email, $note, (new DateTimeImmutable('now'))->format('Y-m-d H:i:s'), $ipHash,
+        $name, $phone, $email, $note, $now, $ipHash, $token,
     ]);
     $id = (int) $db->lastInsertId();
+    if ($old) {
+        $db->prepare("UPDATE reservations SET statut = 'annule', annule_par = 'client', annule_le = ? WHERE id = ?")
+            ->execute([$now, (int) $old['id']]);
+    }
     $db->exec('COMMIT');
 } catch (Throwable $e) {
     if ($db->inTransaction()) {
@@ -109,41 +133,22 @@ try {
     fb_json(['ok' => false, 'error' => 'serveur', 'message' => 'Le rendez-vous n’a pas pu être enregistré. Réessayez ou appelez le salon.'], 500);
 }
 
-// E-mails (après l'enregistrement : un échec d'envoi n'annule pas le rendez-vous)
-$when = fb_date_fr($date) . ' à ' . $time . ' (fin vers ' . fb_hhmm($start + $duration) . ')';
-$agenda = fb_site_url() . '/barber/?jour=' . $date;
-$body = "Nouveau rendez-vous\n\n"
-    . 'Quand : ' . $when . "\n"
-    . 'Prestations : ' . $label . ' (' . $price . " €)\n"
-    . 'Client : ' . $name . "\n"
-    . 'Téléphone : ' . $phone . "\n"
-    . ($email !== '' ? 'E-mail : ' . $email . "\n" : '')
-    . ($note !== '' ? 'Précision : ' . $note . "\n" : '')
-    . "\nAgenda : " . $agenda . "\n";
-fb_mail((string) $cfg['notify_email'], 'Nouveau rendez-vous : ' . fb_date_fr($date) . ' à ' . $time, $body, $email);
+$row = $db->query('SELECT * FROM reservations WHERE id = ' . $id)->fetch();
 
-$clientMailed = false;
-if ($email !== '' && !empty($cfg['confirm_client'])) {
-    $call = $salon['phone'] !== '' ? 'Pour annuler ou déplacer votre rendez-vous, appelez le salon au ' . $salon['phone'] . '.' : 'Pour annuler ou déplacer votre rendez-vous, contactez le salon.';
-    $clientMailed = fb_mail(
-        $email,
-        'Votre rendez-vous chez ' . $salon['name'],
-        "Bonjour {$name},\n\nVotre rendez-vous chez {$salon['name']} est enregistré :\n\n"
-            . ucfirst($when) . "\n" . $label . ' (' . $price . " €)\n"
-            . (($salon['address'] ?? '') !== '' ? 'Adresse : ' . $salon['address'] . "\n" : '')
-            . "\n" . $call . "\n\nÀ bientôt !\n"
-    );
-}
+// E-mails (après l'enregistrement : un échec d'envoi n'annule pas le rendez-vous)
+fb_mail_salon($row, $old ? 'Rendez-vous déplacé (ancien horaire : ' . fb_date_fr($old['date']) . ' à ' . fb_hhmm((int) $old['debut']) . ')' : 'Nouveau rendez-vous');
+$clientMailed = fb_mail_client($row, $old ? 'deplacement' : 'confirmation');
 
 fb_json([
     'ok' => true,
     'reservation' => [
-        'id' => $id,
+        'ref' => $token,
         'date' => $date,
         'heure' => $time,
         'fin' => fb_hhmm($start + $duration),
         'prestations' => $label,
         'prix' => $price,
+        'deplace' => (bool) $old,
         'email_envoye' => $clientMailed,
     ],
 ]);

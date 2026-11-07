@@ -35,6 +35,8 @@
   const motion = hasGSAP && !reduceMQ.matches;
   if (hasGSAP) {
     gsap.registerPlugin(ScrollTrigger);
+    // Sur téléphone, la barre d'adresse qui apparaît ou disparaît ne relance pas tous les calculs
+    ScrollTrigger.config({ ignoreMobileResize: true });
     gsap.config({ nullTargetWarn: false });
   }
 
@@ -223,6 +225,8 @@
     }, 3800);
   }
 
+  let lenis = null; // défilement doux, actif seulement quand les animations le sont
+
   const menu = $('#menu');
   const menuToggle = $('.menu-toggle');
   const menuOpen = () => Boolean(menu && menu.classList.contains('is-open'));
@@ -268,6 +272,10 @@
     menu.setAttribute('aria-hidden', open ? 'false' : 'true');
     menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     root.classList.toggle('menu-open', open);
+    if (lenis) {
+      if (open) lenis.stop();
+      else lenis.start();
+    }
   }
 
   function initMenu() {
@@ -330,10 +338,14 @@
     const ctx = canvas.getContext('2d');
     const host = canvas.parentElement;
     const narrow = window.innerWidth < 700;
-    const STARS = narrow ? 44 : 84;
-    const EMBERS = narrow ? 14 : 30;
-    const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+    const STARS = narrow ? 34 : 60;
+    const EMBERS = narrow ? 12 : 24;
+    const DPR = Math.min(window.devicePixelRatio || 1, 1.25);
     const LINK = 150;
+    const LINK2 = LINK * LINK;
+    // Les filets sont regroupés par intensité : 4 tracés par image au lieu d'un par filet
+    const BUCKETS = 4;
+    const STYLES = Array.from({ length: BUCKETS }, (_, k) => `rgba(206, 206, 206, ${(0.26 * (1 - (k + 0.5) / BUCKETS)).toFixed(3)})`);
     const rnd = (a, b) => a + Math.random() * (b - a);
     const ptr = { x: -9999, y: -9999 };
     let w = 0;
@@ -364,14 +376,14 @@
           if (p.y > h + 10) p.y = -10;
           const dx = ptr.x - p.x;
           const dy = ptr.y - p.y;
-          if (Math.hypot(dx, dy) < 180) {
+          if (dx * dx + dy * dy < 32400) {
             p.x += dx * 0.004;
             p.y += dy * 0.004;
           }
         }
       }
 
-      ctx.lineWidth = 0.6;
+      const paths = Array.from({ length: BUCKETS }, () => new Path2D());
       for (let i = 0; i < stars.length; i++) {
         const a = stars[i];
         for (let j = i + 1; j < stars.length; j++) {
@@ -379,23 +391,26 @@
           const dx = a.x - b.x;
           const dy = a.y - b.y;
           const d2 = dx * dx + dy * dy;
-          if (d2 < LINK * LINK) {
-            ctx.strokeStyle = `rgba(206, 206, 206, ${((1 - Math.sqrt(d2) / LINK) * 0.26).toFixed(3)})`;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
+          if (d2 < LINK2) {
+            const k = Math.min(BUCKETS - 1, Math.floor((Math.sqrt(d2) / LINK) * BUCKETS));
+            paths[k].moveTo(a.x, a.y);
+            paths[k].lineTo(b.x, b.y);
           }
         }
       }
+      ctx.lineWidth = 0.6;
+      paths.forEach((path, k) => {
+        ctx.strokeStyle = STYLES[k];
+        ctx.stroke(path);
+      });
 
-      ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = 0.75;
+      const dots = new Path2D();
       for (const p of stars) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
+        dots.moveTo(p.x + p.r, p.y);
+        dots.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       }
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.fill(dots);
 
       ctx.fillStyle = '#cc6437';
       for (const s of embers) {
@@ -445,7 +460,7 @@
       const r = canvas.getBoundingClientRect();
       ptr.x = e.clientX - r.left;
       ptr.y = e.clientY - r.top;
-    });
+    }, { passive: true });
     host.addEventListener('pointerleave', () => {
       ptr.x = -9999;
       ptr.y = -9999;
@@ -459,13 +474,17 @@
 
   function marble(canvas, reduce) {
     const ctx = canvas.getContext('2d');
-    const CELL = 10; // 1 pixel calculé = 10 px à l'écran : l'agrandissement adoucit l'image
+    const narrow = window.innerWidth < 700;
+    const CELL = 12; // 1 pixel calculé = 12 px à l'écran : l'agrandissement adoucit l'image
+    // La fumée bouge lentement : la recalculer 16 fois par seconde suffit (8 sur téléphone)
+    const INTERVAL = narrow ? 125 : 60;
     let w = 0;
     let h = 0;
     let img = null;
     let t = Math.random() * 6;
     let raf = 0;
     let running = false;
+    let last = 0;
 
     const paint = () => {
       const d = img.data;
@@ -489,14 +508,18 @@
       ctx.putImageData(img, 0, 0);
     };
 
-    const frame = () => {
-      t += 0.006;
-      paint();
+    const frame = (now) => {
+      if (!last || now - last >= INTERVAL) {
+        t += 0.00036 * Math.min(250, last ? now - last : 0);
+        last = now;
+        paint();
+      }
       if (running) raf = requestAnimationFrame(frame);
     };
     const start = () => {
       if (reduce || running) return;
       running = true;
+      last = 0;
       raf = requestAnimationFrame(frame);
     };
     const stop = () => {
@@ -510,7 +533,7 @@
       canvas.width = w;
       canvas.height = h;
       img = ctx.createImageData(w, h);
-      if (reduce) paint();
+      paint();
     };
     window.addEventListener('resize', resize);
     new IntersectionObserver((entries) => {
@@ -525,40 +548,7 @@
     $$('[data-marble]').forEach((c) => marble(c, reduce));
   }
 
-  /* ---------- Survol : curseur, aimant, cartes, lettres du pied de page ---------- */
-
-  function initCursor() {
-    if (!fineMQ.matches || reduceMQ.matches) return;
-    const c = $('.cursor');
-    if (!c) return;
-    const label = $('.cursor__label', c);
-    const mouse = { x: -200, y: -200 };
-    const pos = { x: -200, y: -200 };
-    root.classList.add('has-cursor');
-
-    window.addEventListener('pointermove', (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    }, { passive: true });
-
-    const loop = () => {
-      pos.x += (mouse.x - pos.x) * 0.2;
-      pos.y += (mouse.y - pos.y) * 0.2;
-      c.style.transform = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`;
-      requestAnimationFrame(loop);
-    };
-    requestAnimationFrame(loop);
-
-    document.addEventListener('pointerover', (e) => {
-      const hit = e.target.closest ? e.target.closest('a, button, [data-cursor]') : null;
-      const text = hit ? hit.dataset.cursor : '';
-      c.classList.toggle('is-link', Boolean(hit) && !text);
-      c.classList.toggle('is-label', Boolean(text));
-      if (label) label.textContent = text || '';
-    });
-    root.addEventListener('mouseleave', () => c.classList.add('is-away'));
-    root.addEventListener('mouseenter', () => c.classList.remove('is-away'));
-  }
+  /* ---------- Survol : aimant, cartes, lettres du pied de page ---------- */
 
   function initMagnetic() {
     if (!motion || !fineMQ.matches) return;
@@ -589,8 +579,8 @@
         const r = card.getBoundingClientRect();
         const px = (e.clientX - r.left) / r.width;
         const py = (e.clientY - r.top) / r.height;
-        card.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`);
-        card.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
+        card.style.setProperty('--mx', `${(px * r.width).toFixed(1)}px`);
+        card.style.setProperty('--my', `${(py * r.height).toFixed(1)}px`);
         rx((0.5 - py) * 8);
         ry((px - 0.5) * 8);
       });
@@ -788,6 +778,7 @@
       lastFocus = document.activeElement;
       dlg.showModal();
       root.classList.add('dialog-open');
+      if (lenis) lenis.stop();
       requestAnimationFrame(() => requestAnimationFrame(() => dlg.classList.add('is-visible')));
     };
     const close = () => {
@@ -798,6 +789,7 @@
         delete dlg.dataset.closing;
         dlg.close();
         root.classList.remove('dialog-open');
+        if (lenis) lenis.start();
         if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
       };
       if (reduceMQ.matches) done();
@@ -825,6 +817,7 @@
     const state = {
       selected: new Set(), date: null, time: null, step: 1,
       backend: API ? 'unknown' : 'off', backendMessage: '', remote: null, flash: '', booked: null,
+      replaceRef: '', // jeton du rendez-vous en cours de déplacement (page « Mon rendez-vous »)
     };
 
     const dlg = document.createElement('dialog');
@@ -858,6 +851,7 @@
           <section class="bstep" data-step="2" aria-labelledby="bk-t2" hidden>
             <h3 class="bstep__title" id="bk-t2" tabindex="-1">Date et heure</h3>
             <p class="bstep__hint" data-slots-hint hidden></p>
+            <button class="first-slot" type="button" data-first-slot hidden></button>
             <div class="days-head">
               <p class="mono" data-month></p>
               <div class="days-nav">
@@ -905,6 +899,10 @@
                 </div>
                 <p class="field__error"></p>
               </div>
+              <label class="remember" for="bk-remember">
+                <input id="bk-remember" type="checkbox">
+                <span>Se souvenir de mes coordonnées sur cet appareil</span>
+              </label>
               <div class="hp" aria-hidden="true">
                 <label for="bk-site">Ne pas remplir ce champ</label>
                 <input id="bk-site" name="site_web" type="text" tabindex="-1" autocomplete="off">
@@ -929,6 +927,7 @@
               </svg>
               <h3 class="done__title" id="bk-t5" tabindex="-1" data-done-title></h3>
               <p class="done__text" data-done-text></p>
+              <div class="done__links" data-done-links></div>
               <div class="done__actions">
                 <button class="pill" type="button" data-close>Fermer</button>
                 <button class="pill" type="button" data-restart>Nouvelle demande</button>
@@ -964,6 +963,34 @@
       note: $('#bk-note', dlg),
     };
     const honeypot = $('#bk-site', dlg);
+    const remember = $('#bk-remember', dlg);
+    const firstSlotBtn = $('[data-first-slot]', dlg);
+    const REMEMBER_KEY = 'fbb-coordonnees';
+
+    // Coordonnées gardées dans ce navigateur seulement, si le client l'a demandé
+    function loadRemembered() {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(REMEMBER_KEY) || 'null');
+        if (!saved) return;
+        fields.name.value = saved.name || '';
+        fields.phone.value = saved.phone || '';
+        fields.email.value = saved.email || '';
+        remember.checked = true;
+      } catch (err) {
+        // stockage indisponible (navigation privée…) : on continue sans
+      }
+    }
+    function saveRemembered() {
+      try {
+        if (remember.checked) {
+          window.localStorage.setItem(REMEMBER_KEY, JSON.stringify({ name: value('name'), phone: value('phone'), email: value('email') }));
+        } else {
+          window.localStorage.removeItem(REMEMBER_KEY);
+        }
+      } catch (err) {
+        // stockage indisponible : rien à faire
+      }
+    }
 
     const chosen = () => services.filter((s) => state.selected.has(s.id));
     const totalDuration = () => chosen().reduce((sum, s) => sum + s.duration, 0);
@@ -1026,7 +1053,7 @@
     // Étape 2 : disponibilités du serveur (s'il existe), bande des jours, créneaux
     async function loadAvailability(duration) {
       try {
-        const res = await fetch(`${API}creneaux.php?duree=${duration}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        const res = await fetch(`${API}creneaux.php?duree=${duration}${state.replaceRef ? `&sauf=${state.replaceRef}` : ''}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
         if (!(res.headers.get('content-type') || '').includes('application/json')) {
           state.backend = 'off'; // site hébergé sans PHP : on garde les canaux de secours
           return;
@@ -1132,6 +1159,21 @@
         state.time = null;
       }
       selectDate(state.date, false);
+
+      // Raccourci : le tout premier créneau libre
+      const firstDay = dates.find((d) => slotsFor(d, duration).length);
+      firstSlotBtn.hidden = !firstDay;
+      if (firstDay) {
+        const firstIso = isoDay(firstDay);
+        const firstTime = slotsFor(firstDay, duration)[0];
+        firstSlotBtn.textContent = `Le plus tôt : ${fmtShort.format(firstDay)} à ${toHHMM(firstTime)}`;
+        firstSlotBtn.onclick = () => {
+          state.time = firstTime;
+          selectDate(firstIso, true);
+          const day = $(`.day[data-date="${firstIso}"]`, daysBox);
+          if (day) daysBox.scrollLeft = Math.max(0, day.offsetLeft - daysBox.offsetLeft - 8);
+        };
+      }
       const current = state.date && $(`.day[data-date="${state.date}"]`, daysBox);
       if (current) daysBox.scrollLeft = Math.max(0, current.offsetLeft - daysBox.offsetLeft - 8);
     }
@@ -1317,6 +1359,7 @@
         whatsapp: 'WhatsApp s’ouvre avec votre demande déjà rédigée : il reste à appuyer sur Envoyer. Le salon vous confirme ensuite le rendez-vous.',
         demo: 'Mode démonstration : l’envoi des demandes n’est pas encore configuré, rien ne sera transmis au salon.',
       };
+      if (ch === 'api' && state.replaceRef) notices.api = 'Votre rendez-vous actuel sera annulé dès que le nouveau créneau est enregistré.';
       const notice = $('[data-notice]', dlg);
       notice.textContent = notices[ch] + call;
       notice.classList.toggle('is-demo', ch === 'demo');
@@ -1337,7 +1380,7 @@
         action.addEventListener('click', () => send(action));
       }
       action.className = 'pill pill--xl';
-      action.textContent = { api: 'Confirmer le rendez-vous', endpoint: 'Envoyer la demande', whatsapp: 'Envoyer sur WhatsApp', demo: 'Envoyer la demande' }[ch];
+      action.textContent = { api: state.replaceRef ? 'Confirmer le nouveau créneau' : 'Confirmer le rendez-vous', endpoint: 'Envoyer la demande', whatsapp: 'Envoyer sur WhatsApp', demo: 'Envoyer la demande' }[ch];
       box.appendChild(action);
     }
 
@@ -1386,6 +1429,7 @@
             email: value('email'),
             precision: value('note'),
             site_web: honeypot.value,
+            remplace: state.replaceRef || undefined,
           }),
         });
         data = await res.json().catch(() => ({}));
@@ -1413,15 +1457,38 @@
 
     function finish(ch) {
       const when = whenText();
-      const callText = SALON.phone ? `appelez le salon au ${SALON.phone}` : 'contactez le salon';
+      const moved = Boolean(state.booked && state.booked.deplace);
+      const mailed = state.booked && state.booked.email_envoye ? 'Un e-mail de confirmation vous a été envoyé. ' : '';
       const texts = {
-        api: ['Rendez-vous confirmé', `${cap(when)} : ${chosen().map((s) => s.name).join(' + ')}. ${state.booked && state.booked.email_envoye ? 'Un e-mail de confirmation vous a été envoyé. ' : ''}Pour annuler ou déplacer votre rendez-vous, ${callText}.`],
+        api: moved
+          ? ['Rendez-vous déplacé', `Nouveau créneau : ${when}, ${chosen().map((s) => s.name).join(' + ')}. L’ancien rendez-vous est annulé. ${mailed}`.trim()]
+          : ['Rendez-vous confirmé', `${cap(when)} : ${chosen().map((s) => s.name).join(' + ')}. ${mailed}Vous pouvez le déplacer ou l’annuler en ligne jusqu’à ${SALON.cancelUntil} h avant.`],
         endpoint: ['Demande envoyée', `Le salon a reçu votre demande pour le ${when}. Il vous confirme le rendez-vous par téléphone ou SMS.`],
         whatsapp: ['Message prêt', `Votre demande pour le ${when} est rédigée dans WhatsApp. Pensez à appuyer sur Envoyer.`],
         demo: ['Demande prête', `Mode démonstration : la demande pour le ${when} n’a pas été envoyée. Une fois l’envoi configuré, elle partira directement au salon.`],
       };
       $('[data-done-title]', dlg).textContent = texts[ch][0];
       $('[data-done-text]', dlg).textContent = texts[ch][1];
+
+      const links = $('[data-done-links]', dlg);
+      links.textContent = '';
+      if (ch === 'api' && state.booked && state.booked.ref) {
+        const ref = state.booked.ref;
+        const calendar = document.createElement('a');
+        calendar.className = 'pill';
+        calendar.href = `${API}agenda.php?ref=${ref}`;
+        calendar.textContent = 'Ajouter à mon agenda';
+        const manage = document.createElement('a');
+        manage.className = 'pill';
+        manage.href = `rendez-vous.html?ref=${ref}`;
+        manage.textContent = 'Gérer mon rendez-vous';
+        const code = document.createElement('p');
+        code.className = 'mono done__ref';
+        code.textContent = `Référence : ${ref.slice(0, 8).toUpperCase()}`;
+        links.append(calendar, manage, code);
+        document.dispatchEvent(new CustomEvent('fb:booked', { detail: { ref, replaced: state.replaceRef } }));
+      }
+      saveRemembered();
       show(5);
     }
 
@@ -1489,12 +1556,21 @@
       summary.textContent = text;
     }
 
+    function setReplace(ref) {
+      state.replaceRef = ref || '';
+      state.remote = null;
+      $('#booking-title', dlg).textContent = state.replaceRef ? 'Déplacer' : 'Réserver';
+      $('.booking__eyebrow', dlg).textContent = `${SALON.name} · ${state.replaceRef ? 'Changer de créneau' : 'Prise de rendez-vous'}`;
+    }
+
     function restart() {
       state.booked = null;
+      setReplace('');
       services.forEach((s) => setService(s.id, false));
       state.date = null;
       state.time = null;
       form.reset();
+      loadRemembered();
       $$('.field', dlg).forEach((f) => {
         f.classList.remove('is-invalid');
         $('.field__error', f).textContent = '';
@@ -1507,25 +1583,41 @@
     $$('[data-close]', dlg).forEach((b) => b.addEventListener('click', dialog.close));
     $('[data-restart]', dlg).addEventListener('click', restart);
 
-    function openBooking(serviceId) {
+    /* options : { service } depuis une carte, ou { services, replaceRef, contact } depuis « Mon rendez-vous » */
+    function openBooking(options = {}) {
       if (state.step === 5) restart();
-      const known = services.some((s) => s.id === serviceId);
-      if (known) setService(serviceId, true);
+      const wanted = [...(options.services || []), ...(options.service ? [options.service] : [])]
+        .filter((id) => services.some((s) => s.id === id));
+      if (options.replaceRef !== undefined || options.services) {
+        setReplace(options.replaceRef || '');
+        services.forEach((s) => setService(s.id, wanted.includes(s.id)));
+        state.date = null;
+        state.time = null;
+      } else {
+        wanted.forEach((id) => setService(id, true));
+      }
+      if (options.contact) {
+        fields.name.value = options.contact.name || fields.name.value;
+        fields.phone.value = options.contact.phone || fields.phone.value;
+        fields.email.value = options.contact.email || fields.email.value;
+      }
       dialog.open();
-      show(known ? 2 : state.step);
+      show(wanted.length ? 2 : state.step);
     }
+    window.FBBooking = { open: openBooking };
 
     // Tous les boutons « Réserver » ouvrent le panneau ; une carte présélectionne sa prestation
     document.addEventListener('click', (e) => {
       const trigger = e.target.closest('[data-booking]');
       if (!trigger || dlg.contains(trigger)) return;
       e.preventDefault();
-      openBooking(trigger.dataset.service);
+      openBooking({ service: trigger.dataset.service });
     });
 
     // Lien direct vers la réservation : …/#rdv (pratique pour une bio Instagram)
     if (window.location.hash === '#rdv') openBooking();
 
+    loadRemembered();
     show(1);
   }
 
@@ -1624,6 +1716,171 @@
     });
   }
 
+  /* ---------- Page « Mon rendez-vous » : consulter, déplacer, annuler ---------- */
+
+  function initManage() {
+    const box = $('[data-manage]');
+    if (!box) return;
+    const API = SALON.api ? SALON.api.replace(/\/?$/, '/') : '';
+    const callText = SALON.phone ? `appelez le salon au ${SALON.phone}` : 'contactez le salon';
+    let ref = new URLSearchParams(window.location.search).get('ref') || '';
+
+    const el = (tag, className, text) => {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    };
+    const button = (label, onClick) => {
+      const b = el('button', 'pill', label);
+      b.type = 'button';
+      b.addEventListener('click', onClick);
+      return b;
+    };
+    const bookAgain = (servicesIds) => button('Reprendre un rendez-vous', () => {
+      if (window.FBBooking) window.FBBooking.open({ services: servicesIds || [] });
+    });
+
+    function message(title, text, servicesIds) {
+      box.textContent = '';
+      const actions = el('div', 'manage__actions');
+      actions.append(bookAgain(servicesIds));
+      box.append(el('h2', 'manage__title', title), el('p', 'manage__text', text), actions);
+    }
+
+    async function load(flash) {
+      if (!ref) {
+        message('Lien incomplet', 'Ouvrez le lien reçu après votre réservation, ou prenez un nouveau rendez-vous.');
+        return;
+      }
+      if (!API || window.location.protocol === 'file:') {
+        message('Gestion en ligne indisponible', `La gestion des rendez-vous fonctionne sur le site du salon. En attendant, ${callText}.`);
+        return;
+      }
+      box.textContent = '';
+      box.append(el('p', 'manage__text', 'Chargement de votre rendez-vous…'));
+      let res = null;
+      let data = {};
+      try {
+        res = await fetch(`${API}rendez-vous.php?ref=${encodeURIComponent(ref)}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        if (!(res.headers.get('content-type') || '').includes('application/json')) {
+          message('Gestion en ligne indisponible', `La gestion des rendez-vous fonctionne sur le site du salon. En attendant, ${callText}.`);
+          return;
+        }
+        data = await res.json();
+      } catch (err) {
+        message('Connexion impossible', 'Vérifiez votre connexion, puis rechargez la page.');
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        message(res.status === 404 ? 'Lien inconnu' : 'Gestion indisponible', data.message || `Réessayez plus tard ou ${callText}.`);
+        return;
+      }
+      render(data.rendez_vous, flash);
+    }
+
+    function render(r, flash) {
+      box.textContent = '';
+      const cancelled = r.statut === 'annule';
+      const state = cancelled ? (r.annule_par === 'client' ? 'Annulé' : 'Annulé par le salon') : r.passe ? 'Passé' : 'Confirmé';
+      const status = el('p', `status${!cancelled && !r.passe ? ' is-open' : ''}`);
+      status.append(el('i'), el('span', '', state));
+      status.firstChild.setAttribute('aria-hidden', 'true');
+      const title = el('h2', 'manage__title', `${cap(r.date_texte)} à ${r.heure}`);
+      box.append(status, title);
+      if (flash) {
+        const note = el('p', 'manage__flash', flash);
+        note.setAttribute('role', 'status');
+        box.append(note);
+      }
+
+      const list = el('dl', 'manage__list');
+      [
+        ['Prestations', r.libelle],
+        ['Horaire', `${r.heure} → ${r.fin}`],
+        ['Prix', fmtPrice(r.prix)],
+        ['Au nom de', r.nom],
+        ['Adresse', SALON.address || ''],
+        ['Référence', r.ref.slice(0, 8).toUpperCase()],
+      ].filter(([, v]) => v).forEach(([k, v]) => {
+        const row = el('div');
+        row.append(el('dt', 'mono', k), el('dd', '', v));
+        list.append(row);
+      });
+      box.append(list);
+
+      const actions = el('div', 'manage__actions');
+      if (!cancelled && !r.passe) {
+        const calendar = el('a', 'pill', 'Ajouter à mon agenda');
+        calendar.href = `${API}agenda.php?ref=${r.ref}`;
+        actions.append(calendar);
+        if (r.modifiable) {
+          actions.append(
+            button('Changer de créneau', () => {
+              if (window.FBBooking) {
+                window.FBBooking.open({ services: r.prestations, replaceRef: r.ref, contact: { name: r.nom, phone: r.telephone, email: r.email } });
+              }
+            }),
+            button('Annuler le rendez-vous', () => askCancel(r)),
+          );
+        }
+      } else {
+        actions.append(bookAgain(r.prestations));
+      }
+      box.append(actions);
+
+      if (!cancelled && !r.passe) {
+        box.append(el('p', 'manage__text', r.modifiable
+          ? `Vous pouvez le déplacer ou l’annuler en ligne jusqu’au ${r.limite}. Ensuite, ${callText}.`
+          : `Il est trop tard pour le modifier en ligne : ${callText}.`));
+      }
+    }
+
+    // Confirmation dans la page avant d'annuler (pas de boîte de dialogue du navigateur)
+    function askCancel(r) {
+      const actions = $('.manage__actions', box);
+      actions.textContent = '';
+      const question = el('p', 'manage__confirm', `Annuler votre rendez-vous du ${r.date_texte} à ${r.heure} ?`);
+      const yes = button('Oui, annuler', async () => {
+        yes.disabled = true;
+        yes.textContent = 'Annulation…';
+        let data = {};
+        try {
+          const res = await fetch(`${API}annuler.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ ref: r.ref }),
+          });
+          data = await res.json().catch(() => ({}));
+          if (res.ok && data.ok) {
+            load('Votre rendez-vous est annulé. Le créneau est libéré pour un autre client.');
+            return;
+          }
+        } catch (err) {
+          data = { message: 'Connexion impossible. Réessayez.' };
+        }
+        load(data.message || `L’annulation n’a pas abouti : ${callText}.`);
+      });
+      const no = button('Non, le garder', () => render(r));
+      actions.append(question, yes, no);
+      yes.focus();
+    }
+
+    // Après un déplacement, la page affiche le nouveau rendez-vous
+    document.addEventListener('fb:booked', (e) => {
+      if (!e.detail || !e.detail.replaced || e.detail.replaced !== ref) return;
+      ref = e.detail.ref;
+      try {
+        window.history.replaceState(null, '', `?ref=${ref}`);
+      } catch (err) {
+        // adresse non modifiable : sans conséquence
+      }
+      load('Votre rendez-vous a été déplacé.');
+    });
+
+    load();
+  }
+
   /* ---------- Sommaire des mentions légales : partie en cours de lecture ---------- */
 
   function initToc() {
@@ -1644,6 +1901,33 @@
     });
   }
 
+  /* ---------- Défilement doux (Lenis), synchronisé avec les animations au scroll ---------- */
+
+  function initSmoothScroll() {
+    if (!motion || typeof window.Lenis === 'undefined') return;
+    lenis = new window.Lenis({
+      lerp: 0.11,
+      smoothWheel: true,
+      // Zones qui défilent seules : panneau de réservation, menu, visionneuse, carrousels
+      prevent: (node) => Boolean(node.closest && node.closest('dialog, .menu, .days, .teaser__row, [data-lenis-prevent]')),
+    });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add((time) => lenis.raf(time * 1000));
+    gsap.ticker.lagSmoothing(0);
+
+    // Liens internes (#services…) : même défilement doux, sous l'en-tête
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+      if (!link || link.hasAttribute('data-booking') || e.defaultPrevented) return;
+      const id = link.getAttribute('href');
+      if (id === '#') return;
+      const target = id === '#top' ? 0 : document.querySelector(id);
+      if (target === null) return;
+      e.preventDefault();
+      lenis.scrollTo(target, { offset: id === '#top' ? 0 : -96, duration: 1.4 });
+    });
+  }
+
   /* ---------- Démarrage ---------- */
 
   function boot() {
@@ -1657,14 +1941,15 @@
     initHeader();
     initMenu();
     initMarquees();
+    initSmoothScroll();
     initCanvases();
-    initCursor();
     initMagnetic();
     initCards();
     initDodge();
     initBooking();
     initLightbox();
     initToc();
+    initManage();
 
     if (motion) {
       heroIntro(heroChars);

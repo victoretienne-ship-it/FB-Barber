@@ -95,6 +95,10 @@ function page_start(string $title): void
   .fields label { display: grid; gap: 6px; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; color: var(--color-ash); }
   .fields input, .fields select, .login input { width: 100%; padding: 12px 14px; border: 1px solid var(--color-steel); border-radius: 10px; background: var(--bg); color: var(--fg); font: 400 16px/1.3 var(--font-body); }
   .fields input:focus, .fields select:focus, .login input:focus { outline: 1px solid var(--color-ember-rust); outline-offset: 2px; }
+  .svcs { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; border: 0; padding: 0; margin: 0; }
+  .svcs legend { margin-bottom: 10px; }
+  .svcs label { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: 10px; cursor: pointer; }
+  .svcs input { accent-color: var(--color-ember-rust); }
   .login { width: min(100%, 420px); margin: 12vh auto 0; display: grid; gap: 18px; }
   .steps { display: grid; gap: 10px; padding-left: 20px; list-style: decimal; color: var(--muted); }
   code { font-family: var(--font-mono); font-size: 13px; color: var(--fg); }
@@ -221,6 +225,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         go($row['date']);
     }
 
+    if ($action === 'ajouter') {
+        $date = (string) ($_POST['date'] ?? '');
+        $time = (string) ($_POST['heure'] ?? '');
+        $name = fb_clean($_POST['nom'] ?? '', 80);
+        $phone = fb_clean($_POST['telephone'] ?? '', 30);
+        $note = fb_clean($_POST['precision'] ?? '', 300);
+        $catalog = array_column(fb_salon()['services'], null, 'id');
+        $ids = array_values(array_unique(array_filter(
+            array_map('strval', (array) ($_POST['prestations'] ?? [])),
+            static fn ($id) => isset($catalog[$id])
+        )));
+        $validTime = (bool) preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $time);
+        if (!fb_valid_date($date) || !$validTime || !$ids || mb_strlen($name) < 2 || ($phone !== '' && !fb_valid_phone($phone))) {
+            flash('Rendez-vous non enregistré : cochez au moins une prestation, indiquez le jour, l’heure et le nom du client (et un téléphone valide s’il est renseigné).', 'warn');
+            go($back);
+        }
+        $chosen = array_map(static fn ($id) => $catalog[$id], $ids);
+        $start = fb_min($time);
+        $end = min(24 * 60, $start + array_sum(array_column($chosen, 'duration')));
+        $overlap = false;
+        foreach (fb_busy($date) as [$s, $e]) {
+            if ($start < $e && $end > $s) {
+                $overlap = true;
+            }
+        }
+        $db->prepare(
+            "INSERT INTO reservations (date, debut, fin, type, statut, prestations, libelle, prix, nom, telephone, precision, cree_le, jeton, source)
+             VALUES (?, ?, ?, 'client', 'confirme', ?, ?, ?, ?, ?, ?, ?, ?, 'salon')"
+        )->execute([
+            $date, $start, $end, json_encode($ids), implode(' + ', array_column($chosen, 'name')),
+            array_sum(array_column($chosen, 'price')), $name, $phone, $note,
+            (new DateTimeImmutable('now'))->format('Y-m-d H:i:s'), fb_token(),
+        ]);
+        flash($overlap
+            ? 'Rendez-vous ajouté. Attention : il chevauche un autre rendez-vous ou un blocage.'
+            : 'Rendez-vous ajouté : le créneau n’est plus proposé en ligne.', $overlap ? 'warn' : 'ok');
+        go($date);
+    }
+
     if ($action === 'bloquer') {
         $date = (string) ($_POST['date'] ?? '');
         $time = (string) ($_POST['heure'] ?? '');
@@ -329,6 +372,7 @@ page_start('Agenda, ' . fb_date_fr($day));
   <?php foreach ($rows as $r):
       $cancelled = $r['statut'] === 'annule';
       $block = $r['type'] === 'blocage';
+      $fromSalon = ($r['source'] ?? '') === 'salon';
       $tel = preg_replace('/[^\d+]/', '', (string) $r['telephone']); ?>
     <article class="rdv rdv--<?= h($r['statut']) ?> rdv--<?= h($r['type']) ?>">
       <div class="rdv__time">
@@ -337,19 +381,21 @@ page_start('Agenda, ' . fb_date_fr($day));
       </div>
       <div class="rdv__main">
         <p>
-          <?php if ($cancelled): ?><span class="tag">Annulé</span><?php endif; ?>
+          <?php if ($cancelled): ?><span class="tag"><?= ($r['annule_par'] ?? '') === 'client' ? 'Annulé par le client' : 'Annulé' ?></span><?php endif; ?>
           <?php if ($block): ?><span class="tag">Bloqué</span><?php endif; ?>
-          <?php if (!$block && !$cancelled && strtotime($r['cree_le']) > time() - 86400): ?><span class="tag tag--ember">Nouveau</span><?php endif; ?>
+          <?php if (!$block && $fromSalon): ?><span class="tag">Pris au salon</span><?php endif; ?>
+          <?php if (!$block && !$cancelled && !$fromSalon && strtotime($r['cree_le']) > time() - 86400): ?><span class="tag tag--ember">Nouveau</span><?php endif; ?>
+          <?php if (!$cancelled && !empty($r['rappel_envoye'])): ?><span class="tag">Rappel envoyé</span><?php endif; ?>
         </p>
         <p class="rdv__what"><?= h($r['libelle']) ?><?= $block ? '' : ' · ' . (int) $r['prix'] . ' €' ?></p>
         <?php if (!$block): ?>
           <p class="rdv__who"><?= h($r['nom']) ?></p>
           <p class="rdv__contact">
-            <a href="tel:<?= h($tel) ?>"><?= h($r['telephone']) ?></a>
+            <?php if ($tel !== ''): ?><a href="tel:<?= h($tel) ?>"><?= h($r['telephone']) ?></a><?php endif; ?>
             <?php if ($r['email'] !== ''): ?><a href="mailto:<?= h($r['email']) ?>"><?= h($r['email']) ?></a><?php endif; ?>
           </p>
           <?php if ($r['precision'] !== ''): ?><p class="rdv__note">« <?= h($r['precision']) ?> »</p><?php endif; ?>
-          <p class="mono ash">Réservé en ligne le <?= h(date('d/m à H:i', strtotime($r['cree_le']))) ?></p>
+          <p class="mono ash"><?= $fromSalon ? 'Ajouté depuis l’agenda le' : 'Réservé en ligne le' ?> <?= h(date('d/m à H:i', strtotime($r['cree_le']))) ?></p>
         <?php endif; ?>
       </div>
       <form class="rdv__actions" method="post" <?= $cancelled ? '' : 'onsubmit="return confirm(\'' . ($block ? 'Supprimer ce blocage ?' : 'Annuler ce rendez-vous ? Pensez à prévenir le client.') . '\')"' ?>>
@@ -365,6 +411,30 @@ page_start('Agenda, ' . fb_date_fr($day));
     </article>
   <?php endforeach; ?>
 </section>
+
+<form class="box" method="post">
+  <h2>Ajouter un rendez-vous</h2>
+  <p class="muted">Rendez-vous pris par téléphone ou au comptoir : il occupe le créneau, qui n’est plus proposé en ligne.</p>
+  <fieldset class="svcs">
+    <legend class="mono ash">Prestations</legend>
+    <?php foreach (fb_salon()['services'] as $s): ?>
+      <label><input type="checkbox" name="prestations[]" value="<?= h($s['id']) ?>"> <?= h($s['name']) ?> <span class="mono ash"><?= (int) $s['duration'] ?> min · <?= (int) $s['price'] ?> €</span></label>
+    <?php endforeach; ?>
+  </fieldset>
+  <div class="fields">
+    <label for="a-date">Jour<input id="a-date" type="date" name="date" value="<?= h($day) ?>" required></label>
+    <label for="a-heure">Heure<input id="a-heure" type="time" name="heure" step="300" value="<?= h($ranges ? $ranges[0][0] : '09:00') ?>" required></label>
+    <label for="a-nom">Nom du client<input id="a-nom" type="text" name="nom" maxlength="80" required></label>
+    <label for="a-tel">Téléphone (facultatif)<input id="a-tel" type="tel" name="telephone" maxlength="30"></label>
+  </div>
+  <div class="fields">
+    <label for="a-precision">Précision (facultatif)<input id="a-precision" type="text" name="precision" maxlength="300" placeholder="Dégradé bas, barbe courte…"></label>
+  </div>
+  <input type="hidden" name="csrf" value="<?= $csrf ?>">
+  <input type="hidden" name="jour" value="<?= h($day) ?>">
+  <input type="hidden" name="action" value="ajouter">
+  <button class="pill" type="submit">Ajouter le rendez-vous</button>
+</form>
 
 <form class="box" method="post">
   <h2>Bloquer un créneau</h2>

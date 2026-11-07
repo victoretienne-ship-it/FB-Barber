@@ -55,7 +55,7 @@
 
     <!-- HERO : la photo du salon, très floutée, derrière le titre -->
     <section class="hero hero--gallery" aria-labelledby="hero-title">
-      <img class="hero__photo" src="assets/img/galerie/salon-postes.jpg" alt="" width="1170" height="623">
+      <img class="hero__photo" src="assets/img/galerie/salon-flou.jpg" alt="" width="160" height="85">
       <canvas class="hero__stars" data-stars aria-hidden="true"></canvas>
 
       <p class="hero__label hero__label--l">L’atelier en images</p>
@@ -81,7 +81,7 @@
     <section class="section gallery" id="photos" aria-label="Photos du salon">
       <div class="wrap gallery__grid">
 
-        <a class="shot shot--wide" href="assets/img/galerie/salon-postes.jpg" data-shot data-cursor="Agrandir">
+        <a class="shot shot--wide" href="assets/img/galerie/salon-postes.jpg" data-shot>
           <span class="shot__frame">
             <img src="assets/img/galerie/salon-postes.jpg" alt="Intérieur du salon : trois fauteuils de barbier noirs face à des miroirs ovales éclairés, appliques murales et papier peint gris." width="1170" height="623" decoding="async">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
@@ -93,7 +93,7 @@
           </span>
         </a>
 
-        <a class="shot shot--side" href="assets/img/galerie/espace-shampoing.jpg" data-shot data-cursor="Agrandir">
+        <a class="shot shot--side" href="assets/img/galerie/espace-shampoing.jpg" data-shot>
           <span class="shot__frame">
             <img src="assets/img/galerie/espace-shampoing.jpg" alt="L’espace shampoing : un fauteuil-bac noir, un chariot d’outils et un miroir ovale éclairé." width="1170" height="1444" decoding="async">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
@@ -105,7 +105,7 @@
           </span>
         </a>
 
-        <a class="shot" href="assets/img/galerie/coupe-enfant.jpg" data-shot data-cursor="Agrandir">
+        <a class="shot" href="assets/img/galerie/coupe-enfant.jpg" data-shot>
           <span class="shot__frame">
             <img src="assets/img/galerie/coupe-enfant.jpg" alt="Le barbier coupe les cheveux d’un enfant installé sous une cape à motifs de dinosaures." width="1170" height="1415" loading="lazy" decoding="async">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
@@ -117,7 +117,7 @@
           </span>
         </a>
 
-        <a class="shot shot--drop" href="assets/img/galerie/coupe-tondeuse.jpg" data-shot data-cursor="Agrandir">
+        <a class="shot shot--drop" href="assets/img/galerie/coupe-tondeuse.jpg" data-shot>
           <span class="shot__frame">
             <img src="assets/img/galerie/coupe-tondeuse.jpg" alt="Le barbier coupe à la tondeuse les cheveux d’un client à la barbe blanche, sous une cape rayée noir et blanc." width="1170" height="983" loading="lazy" decoding="async" style="object-position: 65% 50%">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
@@ -129,7 +129,7 @@
           </span>
         </a>
 
-        <a class="shot" href="assets/img/galerie/finitions.jpg" data-shot data-cursor="Agrandir">
+        <a class="shot" href="assets/img/galerie/finitions.jpg" data-shot>
           <span class="shot__frame">
             <img src="assets/img/galerie/finitions.jpg" alt="Un enfant sous une cape à dinosaures pendant que le barbier dessine ses contours au peigne." width="1170" height="1438" loading="lazy" decoding="async">
             <span class="edge edge--t"></span><span class="edge edge--r"></span><span class="edge edge--b"></span><span class="edge edge--l"></span>
@@ -180,14 +180,11 @@
 
   <div class="grain" aria-hidden="true"></div>
 
-  <div class="cursor" aria-hidden="true">
-    <div class="cursor__ring"><span class="cursor__label"></span></div>
-    <div class="cursor__dot"></div>
-  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
 <script src="assets/js/salon.js"></script>
 <script src="assets/js/site.js"></script>
 </body>

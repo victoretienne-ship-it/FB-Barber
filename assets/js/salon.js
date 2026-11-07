@@ -44,6 +44,9 @@ window.SALON_CONFIG = {
   "leadTime": 60,
   "daysAhead": 28,
 
+  // Délai (en heures avant le rendez-vous) jusqu'auquel le client peut annuler ou déplacer en ligne.
+  "cancelUntil": 2,
+
   // Prestations. L'identifiant (id) correspond à l'attribut data-service des cartes de l'accueil.
   "services": [
     { "id": "coupe-homme", "name": "Coupe homme", "duration": 45, "price": 25 },

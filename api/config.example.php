@@ -25,6 +25,13 @@ return [
     // Envoyer un e-mail de confirmation au client quand il a indiqué son adresse.
     'confirm_client' => true,
 
+    // Rappel par e-mail dans les 24 heures avant le rendez-vous (clients ayant donné leur e-mail).
+    // Nécessite la tâche planifiée « php …/public_html/api/rappels.php » toutes les heures.
+    'reminders' => true,
+
+    // Adresse du site utilisée dans les liens des e-mails. Vide = détectée automatiquement.
+    'site_url' => '',
+
     // Dossier de la base de données. Vide = automatique : à côté du dossier public_html
     // (fb-barber-data), donc inaccessible depuis le web.
     'data_dir' => '',

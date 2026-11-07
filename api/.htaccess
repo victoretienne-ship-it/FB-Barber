@@ -1,5 +1,5 @@
-# Seuls creneaux.php et reserver.php sont appelés depuis le navigateur.
-<FilesMatch "^(lib|config|config\.example)\.php$">
+# Fichiers internes : jamais servis au navigateur (rappels.php est lancé par la tâche planifiée).
+<FilesMatch "^(lib|config|config\.example|rappels)\.php$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>

@@ -22,7 +22,10 @@ function fb_config(): ?array
     if (!is_array($data) || mb_strlen((string) ($data['admin_password'] ?? '')) < 10) {
         return $cfg = null;
     }
-    $data += ['notify_email' => '', 'mail_from' => '', 'confirm_client' => true, 'data_dir' => '', 'timezone' => 'Europe/Paris'];
+    $data += [
+        'notify_email' => '', 'mail_from' => '', 'confirm_client' => true, 'reminders' => true,
+        'site_url' => '', 'data_dir' => '', 'timezone' => 'Europe/Paris',
+    ];
     return $cfg = $data;
 }
 
@@ -42,7 +45,10 @@ function fb_salon(): array
     if (!is_array($data)) {
         fb_json(['ok' => false, 'error' => 'config_salon', 'message' => 'La configuration du salon est illisible (assets/js/salon.js).'], 500);
     }
-    $data += ['name' => 'FB Barber', 'phone' => '', 'hours' => [], 'closedDates' => [], 'slotStep' => 15, 'leadTime' => 60, 'daysAhead' => 28, 'services' => []];
+    $data += [
+        'name' => 'FB Barber', 'phone' => '', 'address' => '', 'hours' => [], 'closedDates' => [],
+        'slotStep' => 15, 'leadTime' => 60, 'daysAhead' => 28, 'cancelUntil' => 2, 'services' => [],
+    ];
     return $salon = $data;
 }
 
@@ -73,15 +79,18 @@ function fb_json(array $data, int $status = 200): never
     exit;
 }
 
-/** Dossier des données : en dehors du dossier public quand c'est possible. */
+/**
+ * Dossier des données : à côté du dossier public (public_html) quand c'est possible, donc
+ * inaccessible depuis le web. Le même chemin est trouvé depuis le site et depuis la tâche planifiée.
+ */
 function fb_data_dir(): string
 {
     $cfg = fb_config() ?? [];
     $dir = (string) ($cfg['data_dir'] ?? '');
     if ($dir === '') {
-        $docroot = rtrim((string) ($_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
-        $outside = $docroot !== '' ? dirname($docroot) . '/fb-barber-data' : '';
-        $dir = ($outside !== '' && (is_dir($outside) || @is_writable(dirname($outside)))) ? $outside : FB_ROOT . '/data';
+        $site = realpath(FB_ROOT) ?: FB_ROOT;
+        $outside = dirname($site) . '/fb-barber-data';
+        $dir = (is_dir($outside) || @is_writable(dirname($outside))) ? $outside : FB_ROOT . '/data';
     }
     if (!is_dir($dir) && !@mkdir($dir, 0750, true)) {
         fb_json(['ok' => false, 'error' => 'stockage', 'message' => 'Impossible de créer le dossier des réservations.'], 500);
@@ -133,6 +142,21 @@ function fb_db(): PDO
             quand TEXT NOT NULL
         );
         SQL);
+    // Mise à jour des bases créées par une version précédente
+    $columns = array_column($db->query('PRAGMA table_info(reservations)')->fetchAll(), 'name');
+    $added = [
+        'jeton' => "TEXT NOT NULL DEFAULT ''",
+        'source' => "TEXT NOT NULL DEFAULT 'en_ligne'",
+        'annule_par' => "TEXT NOT NULL DEFAULT ''",
+        'annule_le' => "TEXT NOT NULL DEFAULT ''",
+        'rappel_envoye' => 'INTEGER NOT NULL DEFAULT 0',
+    ];
+    foreach ($added as $name => $definition) {
+        if (!in_array($name, $columns, true)) {
+            $db->exec("ALTER TABLE reservations ADD COLUMN {$name} {$definition}");
+        }
+    }
+    $db->exec('CREATE INDEX IF NOT EXISTS idx_reservations_jeton ON reservations (jeton)');
     fb_purge($db);
     return $db;
 }
@@ -165,6 +189,29 @@ function fb_ip_hash(): string
     return hash('sha256', ($_SERVER['REMOTE_ADDR'] ?? '') . '|' . (string) @file_get_contents($saltFile));
 }
 
+/** Jeton secret du lien « Gérer mon rendez-vous » (128 bits, impossible à deviner). */
+function fb_token(): string
+{
+    return bin2hex(random_bytes(16));
+}
+
+function fb_valid_token(string $token): bool
+{
+    return (bool) preg_match('/^[a-f0-9]{32}$/', $token);
+}
+
+/** Rendez-vous client correspondant à un jeton, ou null. */
+function fb_find_by_token(string $token): ?array
+{
+    if (!fb_valid_token($token)) {
+        return null;
+    }
+    $stmt = fb_db()->prepare("SELECT * FROM reservations WHERE jeton = ? AND type = 'client' LIMIT 1");
+    $stmt->execute([$token]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
 function fb_min(string $hhmm): int
 {
     [$h, $m] = array_map('intval', explode(':', $hhmm));
@@ -194,6 +241,22 @@ function fb_date_fr(string $date): string
 {
     $d = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
     return FB_DAYS[(int) $d->format('w')] . ' ' . (int) $d->format('j') . ' ' . FB_MONTHS[(int) $d->format('n')];
+}
+
+/** Début d'un rendez-vous, à l'heure du salon. */
+function fb_start(array $row): DateTimeImmutable
+{
+    return (new DateTimeImmutable($row['date'] . ' 00:00:00'))->modify('+' . (int) $row['debut'] . ' minutes');
+}
+
+/** Le client peut-il encore annuler ou déplacer ce rendez-vous en ligne ? */
+function fb_can_change(array $row): bool
+{
+    if ($row['type'] !== 'client' || $row['statut'] !== 'confirme') {
+        return false;
+    }
+    $limit = fb_start($row)->modify('-' . max(0, (int) fb_salon()['cancelUntil']) . ' hours');
+    return new DateTimeImmutable('now') < $limit;
 }
 
 /** Plages d'ouverture d'une date, fermetures exceptionnelles comprises. */
@@ -234,8 +297,11 @@ function fb_bookable_days(): array
     return $days;
 }
 
-/** Heures de début libres (en minutes) pour une durée donnée. */
-function fb_free_slots(string $date, int $duration): array
+/**
+ * Heures de début libres (en minutes) pour une durée donnée.
+ * $exceptId : rendez-vous à ignorer (celui qu'un client est en train de déplacer).
+ */
+function fb_free_slots(string $date, int $duration, ?int $exceptId = null): array
 {
     $salon = fb_salon();
     $now = new DateTimeImmutable('now');
@@ -249,7 +315,7 @@ function fb_free_slots(string $date, int $duration): array
     }
     $step = max(5, (int) $salon['slotStep']);
     $earliest = $date === $today ? ((int) $now->format('G')) * 60 + (int) $now->format('i') + (int) $salon['leadTime'] : -1;
-    $busy = fb_busy($date);
+    $busy = fb_busy($date, $exceptId);
     $slots = [];
     foreach ($ranges as [$open, $close]) {
         for ($t = fb_min($open); $t + $duration <= fb_min($close); $t += $step) {
@@ -280,6 +346,37 @@ function fb_valid_phone(string $phone): bool
     return (bool) preg_match('/^(?:(?:\+|00)33|0)[1-9]\d{8}$/', $digits) || (bool) preg_match('/^\+\d{8,15}$/', $digits);
 }
 
+/** Adresse publique du site, pour les liens dans les e-mails (aussi depuis la tâche planifiée). */
+function fb_site_url(): string
+{
+    $cfg = fb_config() ?? [];
+    if (!empty($cfg['site_url'])) {
+        return rtrim((string) $cfg['site_url'], '/');
+    }
+    if (!empty($_SERVER['HTTP_HOST'])) {
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+        $base = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/'), 2)), '/');
+        return ($https ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $base;
+    }
+    // Hébergement Hostinger : …/domains/<domaine>/public_html
+    $site = realpath(FB_ROOT) ?: FB_ROOT;
+    $domainDir = dirname($site);
+    if (basename(dirname($domainDir)) === 'domains') {
+        return 'https://' . basename($domainDir);
+    }
+    return 'http://localhost';
+}
+
+function fb_manage_url(string $token): string
+{
+    return fb_site_url() . '/rendez-vous.html?ref=' . $token;
+}
+
+function fb_calendar_url(string $token): string
+{
+    return fb_site_url() . '/api/agenda.php?ref=' . $token;
+}
+
 /** Envoi d'un e-mail texte en UTF-8. Renvoie false si le serveur refuse. */
 function fb_mail(string $to, string $subject, string $body, string $replyTo = ''): bool
 {
@@ -287,7 +384,7 @@ function fb_mail(string $to, string $subject, string $body, string $replyTo = ''
         return false;
     }
     $cfg = fb_config() ?? [];
-    $host = preg_replace('/^www\./', '', (string) ($_SERVER['HTTP_HOST'] ?? 'localhost')) ?? 'localhost';
+    $host = preg_replace('/^www\./', '', (string) (parse_url(fb_site_url(), PHP_URL_HOST) ?: 'localhost')) ?? 'localhost';
     $from = filter_var($cfg['mail_from'] ?? '', FILTER_VALIDATE_EMAIL) ? $cfg['mail_from'] : 'reservation@' . $host;
     $name = mb_encode_mimeheader(fb_salon()['name'], 'UTF-8');
     $headers = [
@@ -302,10 +399,60 @@ function fb_mail(string $to, string $subject, string $body, string $replyTo = ''
     return @mail($to, mb_encode_mimeheader($subject, 'UTF-8'), $body, implode("\r\n", $headers));
 }
 
-/** Adresse publique du site, pour les liens dans les e-mails. */
-function fb_site_url(): string
+/** Date et heure lisibles : « samedi 7 novembre à 10:00 (fin vers 10:45) » */
+function fb_when(array $row): string
 {
-    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
-    $base = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/'), 2)), '/');
-    return ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $base;
+    return fb_date_fr($row['date']) . ' à ' . fb_hhmm((int) $row['debut']) . ' (fin vers ' . fb_hhmm((int) $row['fin']) . ')';
+}
+
+/**
+ * E-mails envoyés au client : confirmation, déplacement, annulation, rappel.
+ * Renvoie false s'il n'a pas d'adresse ou si l'envoi échoue.
+ */
+function fb_mail_client(array $row, string $kind): bool
+{
+    $cfg = fb_config() ?? [];
+    if ($row['email'] === '' || empty($cfg['confirm_client'])) {
+        return false;
+    }
+    $salon = fb_salon();
+    $name = $salon['name'];
+    $phone = $salon['phone'] !== '' ? ' au ' . $salon['phone'] : '';
+    $details = ucfirst(fb_when($row)) . "\n" . $row['libelle'] . ' (' . (int) $row['prix'] . " €)\n"
+        . ($salon['address'] !== '' ? 'Adresse : ' . $salon['address'] . "\n" : '');
+    $hours = (int) $salon['cancelUntil'];
+    $manage = "Déplacer ou annuler en ligne (jusqu'à {$hours} h avant) : " . fb_manage_url($row['jeton']) . "\n"
+        . 'Ajouter à votre agenda : ' . fb_calendar_url($row['jeton']) . "\n"
+        . "Passé ce délai, appelez le salon{$phone}.\n";
+
+    [$subject, $intro, $outro] = match ($kind) {
+        'confirmation' => ["Votre rendez-vous chez {$name}", "Votre rendez-vous chez {$name} est enregistré :", $manage],
+        'deplacement' => ["Votre rendez-vous chez {$name} est déplacé", "Votre rendez-vous chez {$name} a bien été déplacé. Nouvel horaire :", $manage],
+        'rappel' => [
+            "Rappel : votre rendez-vous chez {$name}",
+            'Petit rappel de votre rendez-vous chez ' . $name . ' ' . (fb_start($row)->format('Y-m-d') === (new DateTimeImmutable('today'))->format('Y-m-d') ? 'aujourd’hui' : 'demain') . ' :',
+            $manage,
+        ],
+        'annulation' => [
+            "Votre rendez-vous chez {$name} est annulé",
+            'Votre rendez-vous a bien été annulé :',
+            'Pour en reprendre un : ' . fb_site_url() . "/#rdv\n",
+        ],
+    };
+    return fb_mail($row['email'], $subject, "Bonjour {$row['nom']},\n\n{$intro}\n\n{$details}\n{$outro}\nÀ bientôt !\n");
+}
+
+/** E-mail au salon (si une adresse est configurée). */
+function fb_mail_salon(array $row, string $title): bool
+{
+    $cfg = fb_config() ?? [];
+    $body = $title . "\n\n"
+        . 'Quand : ' . fb_when($row) . "\n"
+        . 'Prestations : ' . $row['libelle'] . ' (' . (int) $row['prix'] . " €)\n"
+        . 'Client : ' . $row['nom'] . "\n"
+        . 'Téléphone : ' . $row['telephone'] . "\n"
+        . ($row['email'] !== '' ? 'E-mail : ' . $row['email'] . "\n" : '')
+        . ($row['precision'] !== '' ? 'Précision : ' . $row['precision'] . "\n" : '')
+        . "\nAgenda : " . fb_site_url() . '/barber/?jour=' . $row['date'] . "\n";
+    return fb_mail((string) ($cfg['notify_email'] ?? ''), $title . ' : ' . fb_date_fr($row['date']) . ' à ' . fb_hhmm((int) $row['debut']), $body, $row['email']);
 }
