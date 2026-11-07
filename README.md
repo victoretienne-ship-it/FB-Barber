@@ -91,6 +91,14 @@ uniquement sur leur propre ligne.
 SIRET, immatriculation, TVA, directeur de la publication, e-mail de contact, médiateur de la
 consommation). Ils sont obligatoires : remplissez-les avant la mise en ligne.
 
+## Mettre à jour le site
+
+Hostinger demande aux navigateurs de garder les fichiers CSS et JS en cache 7 jours. Après une
+modification de `site.css`, `site.js` ou `salon.js`, changez le numéro `?v=…` de leurs liens dans
+les quatre pages HTML pour que les visiteurs reçoivent la nouvelle version, puis videz le cache
+CDN (hPanel → Performance → CDN → Vider le cache). Envoyez les fichiers modifiés un par un : le
+déploiement d'une archive remplace tout le dossier et supprimerait `api/config.php`.
+
 ## Données et sécurité
 
 - Les rendez-vous sont dans `reservations.sqlite`, rangé dans `fb-barber-data/` à côté de
